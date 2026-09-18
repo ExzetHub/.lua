@@ -1,18 +1,121 @@
 -- ============================================
--- EXZETHUB - AUTO PICKUP EGG BY RARITY
+-- NATIVE AUTO PICKUP EGG (SAFE & NO ERROR)
 -- ============================================
 
-local ExzetHub = loadstring(game:HttpGet("https://raw.githubusercontent.com/ExzetHub/.lua/refs/heads/main/xz%20hub"))()
-
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LocalPlayer = Players.LocalPlayer
+
 local RemoteEgg = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Game"):WaitForChild("EggPickup")[cite: 1]
 
 _G.AutoPickup = false
 _G.TargetRarity = "Ethereal"
 
-local Window = ExzetHub:CreateWindow("Egg Auto Pickup Hub")
-local MainTab = Window:CreateTab("Main Features")
+-- Clean up UI lama
+local ParentGui = LocalPlayer:WaitForChild("PlayerGui")
+if ParentGui:FindFirstChild("EggHubGui") then
+    ParentGui.EggHubGui:Destroy()
+end
 
+-- GUI Setup
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "EggHubGui"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = ParentGui
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 220, 0, 160)
+MainFrame.Position = UDim2.new(0.5, -110, 0.3, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
+
+-- Title Bar
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -30, 0, 30)
+Title.Position = UDim2.new(0, 10, 0, 0)
+Title.Text = "Egg Pickup Hub"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 15
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.BackgroundTransparency = 1
+Title.Parent = MainFrame
+
+-- Minimize Button
+local MinBtn = Instance.new("TextButton")
+MinBtn.Size = UDim2.new(0, 24, 0, 24)
+MinBtn.Position = UDim2.new(1, -27, 0, 3)
+MinBtn.Text = "-"
+MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+MinBtn.Font = Enum.Font.SourceSansBold
+MinBtn.Parent = MainFrame
+Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 4)
+
+local Content = Instance.new("Frame")
+Content.Size = UDim2.new(1, 0, 1, -30)
+Content.Position = UDim2.new(0, 0, 0, 30)
+Content.BackgroundTransparency = 1
+Content.Parent = MainFrame
+
+-- Toggle Auto Pickup
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Size = UDim2.new(0.9, 0, 0, 38)
+ToggleBtn.Position = UDim2.new(0.05, 0, 0, 10)
+ToggleBtn.Text = "Auto Pickup: OFF"
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleBtn.Font = Enum.Font.SourceSansBold
+ToggleBtn.TextSize = 14
+ToggleBtn.Parent = Content
+Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 6)
+
+-- Input Rarity Box
+local RarityBox = Instance.new("TextBox")
+RarityBox.Size = UDim2.new(0.9, 0, 0, 38)
+RarityBox.Position = UDim2.new(0.05, 0, 0, 55)
+RarityBox.Text = _G.TargetRarity
+RarityBox.PlaceholderText = "Ketik Rarity..."
+RarityBox.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+RarityBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+RarityBox.Font = Enum.Font.SourceSans
+RarityBox.TextSize = 14
+RarityBox.Parent = Content
+Instance.new("UICorner", RarityBox).CornerRadius = UDim.new(0, 6)
+
+-- Minimize Event
+local IsMin = false
+MinBtn.MouseButton1Click:Connect(function()
+    IsMin = not IsMin
+    Content.Visible = not IsMin
+    MainFrame.Size = IsMin and UDim2.new(0, 220, 0, 30) or UDim2.new(0, 220, 0, 160)
+    MinBtn.Text = IsMin and "+" or "-"
+end)
+
+-- Rarity Box Event
+RarityBox.FocusLost:Connect(function()
+    if RarityBox.Text ~= "" then
+        _G.TargetRarity = RarityBox.Text
+    end
+end)
+
+-- Toggle Event
+ToggleBtn.MouseButton1Click:Connect(function()
+    _G.AutoPickup = not _G.AutoPickup
+    if _G.AutoPickup then
+        ToggleBtn.Text = "Auto Pickup: ON"
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 180, 40)
+    else
+        ToggleBtn.Text = "Auto Pickup: OFF"
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+    end
+end)
+
+-- Logika Extract UUID & Auto Fire
 local function extractEggUUID(obj)
     if type(obj.Name) == "string" and string.len(obj.Name) == 36 and string.find(obj.Name, "-") then
         return obj.Name
@@ -24,36 +127,27 @@ local function extractEggUUID(obj)
             return attrVal
         end
     end
-    
     return nil
 end
 
-MainTab:CreateToggle("Auto Pickup Egg", function(state)
-    _G.AutoPickup = state
-    if state then
-        task.spawn(function()
-            while _G.AutoPickup do
-                for _, obj in pairs(workspace:GetDescendants()) do
-                    if not _G.AutoPickup then break end
-                    
-                    local origRarity = obj:GetAttribute("A_OrigRarity") or obj.Name[cite: 3]
-                    local cleanRarity = string.gsub(tostring(origRarity), "-", "")
-                    
-                    if cleanRarity:lower() == tostring(_G.TargetRarity):lower() then
-                        local eggUUID = extractEggUUID(obj)
-                        
-                        if eggUUID then
-                            RemoteEgg:FireServer(eggUUID)[cite: 1]
-                            task.wait(0.05)
-                        end
+task.spawn(function()
+    while true do
+        if _G.AutoPickup then
+            for _, obj in pairs(workspace:GetDescendants()) do
+                if not _G.AutoPickup then break end
+                
+                local origRarity = obj:GetAttribute("A_OrigRarity") or obj.Name[cite: 3]
+                local cleanRarity = string.gsub(tostring(origRarity), "-", "")
+                
+                if cleanRarity:lower() == tostring(_G.TargetRarity):lower() then
+                    local eggUUID = extractEggUUID(obj)
+                    if eggUUID then
+                        RemoteEgg:FireServer(eggUUID)[cite: 1]
+                        task.wait(0.05)
                     end
                 end
-                task.wait(0.3)
             end
-        end)
+        end
+        task.wait(0.3)
     end
-end)
-
-MainTab:CreateDropdown("Select Rarity", {"Common", "Rare", "Epic", "Legendary", "Divine", "Ethereal"}, function(selectedOption)
-    _G.TargetRarity = selectedOption
 end)
