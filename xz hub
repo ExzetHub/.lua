@@ -1,38 +1,48 @@
 -- ============================================
--- EXZET HUB - ONTOP (CLEAN HORIZONTAL & SWITCH)
+-- EXZET HUB - ONTOP (WIDE LANDSCAPE + FLY)
 -- ============================================
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
+
+-- Menyimpan Nilai Bawaan Map Asli
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local Humanoid = Character:WaitForChild("Humanoid")
+local OriginalWalkSpeed = Humanoid.WalkSpeed
+local OriginalJumpPower = Humanoid.JumpPower
 
 -- State Variables
 _G.WalkSpeedToggle = false
-_G.WalkSpeedVal = 16
+_G.WalkSpeedVal = OriginalWalkSpeed
 
 _G.JumpPowerToggle = false
-_G.JumpPowerVal = 50
+_G.JumpPowerVal = OriginalJumpPower
 
 _G.InfJump = false
 _G.SavedCFrame = nil
 
+_G.FlyToggle = false
+_G.FlySpeed = 50
+
 -- Clean Old UI
 local ParentGui = LocalPlayer:WaitForChild("PlayerGui")
-if ParentGui:FindFirstChild("ExzetCleanHub") then
-    ParentGui.ExzetCleanHub:Destroy()
+if ParentGui:FindFirstChild("ExzetWideHub") then
+    ParentGui.ExzetWideHub:Destroy()
 end
 
 -- 1. MAIN SCREEN GUI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ExzetCleanHub"
+ScreenGui.Name = "ExzetWideHub"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = ParentGui
 
--- 2. MAIN FRAME (Merah-Hitam Transparan)
+-- 2. MAIN FRAME (Panjang Kesamping Keseluruhan)
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 260, 0, 290)
-MainFrame.Position = UDim2.new(0.5, -130, 0.35, -145)
+MainFrame.Size = UDim2.new(0, 480, 0, 260)
+MainFrame.Position = UDim2.new(0.5, -240, 0.35, -130)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 5, 5)
 MainFrame.BackgroundTransparency = 0.25
 MainFrame.Active = true
@@ -55,8 +65,8 @@ Header.BackgroundTransparency = 1
 Header.Parent = MainFrame
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -65, 1, 0)
-Title.Position = UDim2.new(0, 12, 0, 0)
+Title.Size = UDim2.new(1, -70, 1, 0)
+Title.Position = UDim2.new(0, 14, 0, 0)
 Title.Text = "Exzet Hub - Ontop"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
@@ -68,7 +78,7 @@ Title.Parent = Header
 -- MINIMIZE BUTTON (-)
 local MinBtn = Instance.new("TextButton")
 MinBtn.Size = UDim2.new(0, 22, 0, 22)
-MinBtn.Position = UDim2.new(1, -54, 0, 65/10)
+MinBtn.Position = UDim2.new(1, -54, 0, 6.5)
 MinBtn.Text = "-"
 MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 MinBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
@@ -81,7 +91,7 @@ Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 5)
 -- CLOSE BUTTON (X)
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 22, 0, 22)
-CloseBtn.Position = UDim2.new(1, -27, 0, 65/10)
+CloseBtn.Position = UDim2.new(1, -27, 0, 6.5)
 CloseBtn.Text = "X"
 CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
@@ -91,13 +101,14 @@ CloseBtn.TextSize = 12
 CloseBtn.Parent = Header
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 5)
 
--- 4. CONFIRMATION CLOSE POPUP
+-- 4. CONFIRMATION POPUP
 local ConfirmFrame = Instance.new("Frame")
-ConfirmFrame.Size = UDim2.new(0, 200, 0, 95)
-ConfirmFrame.Position = UDim2.new(0.5, -100, 0.5, -47)
+ConfirmFrame.Size = UDim2.new(0, 210, 0, 95)
+ConfirmFrame.Position = UDim2.new(0.5, -105, 0.5, -47)
 ConfirmFrame.BackgroundColor3 = Color3.fromRGB(15, 5, 5)
 ConfirmFrame.BackgroundTransparency = 0.1
 ConfirmFrame.Visible = false
+ConfirmFrame.ZIndex = 10
 ConfirmFrame.Parent = ScreenGui
 
 Instance.new("UICorner", ConfirmFrame).CornerRadius = UDim.new(0, 8)
@@ -112,32 +123,35 @@ ConfirmText.TextColor3 = Color3.fromRGB(255, 255, 255)
 ConfirmText.Font = Enum.Font.Gotham
 ConfirmText.TextSize = 12
 ConfirmText.BackgroundTransparency = 1
+ConfirmText.ZIndex = 11
 ConfirmText.Parent = ConfirmFrame
 
 local YesBtn = Instance.new("TextButton")
-YesBtn.Size = UDim2.new(0, 75, 0, 26)
-YesBtn.Position = UDim2.new(0.12, 0, 0, 52)
+YesBtn.Size = UDim2.new(0, 80, 0, 26)
+YesBtn.Position = UDim2.new(0.1, 0, 0, 52)
 YesBtn.Text = "Yes"
 YesBtn.BackgroundColor3 = Color3.fromRGB(180, 30, 30)
 YesBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 YesBtn.Font = Enum.Font.GothamBold
+YesBtn.ZIndex = 11
 YesBtn.Parent = ConfirmFrame
 Instance.new("UICorner", YesBtn).CornerRadius = UDim.new(0, 5)
 
 local NoBtn = Instance.new("TextButton")
-NoBtn.Size = UDim2.new(0, 75, 0, 26)
+NoBtn.Size = UDim2.new(0, 80, 0, 26)
 NoBtn.Position = UDim2.new(0.52, 0, 0, 52)
 NoBtn.Text = "No"
 NoBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
 NoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 NoBtn.Font = Enum.Font.GothamBold
+NoBtn.ZIndex = 11
 NoBtn.Parent = ConfirmFrame
 Instance.new("UICorner", NoBtn).CornerRadius = UDim.new(0, 5)
 
--- CONTAINER FITUR
+-- CONTAINER CONTENT (MEMANJANG KESAMPING)
 local Content = Instance.new("ScrollingFrame")
-Content.Size = UDim2.new(1, -16, 1, -40)
-Content.Position = UDim2.new(0, 8, 0, 35)
+Content.Size = UDim2.new(1, -20, 1, -45)
+Content.Position = UDim2.new(0, 10, 0, 38)
 Content.BackgroundTransparency = 1
 Content.CanvasSize = UDim2.new(0, 0, 0, 230)
 Content.ScrollBarThickness = 2
@@ -150,9 +164,9 @@ UIList.Padding = UDim.new(0, 8)
 -- HELPER: TOGGLE SWITCH (HIJAU / ABU-ABU)
 local function createSwitch(parent, onToggle)
     local switchBg = Instance.new("Frame")
-    switchBg.Size = UDim2.new(0, 40, 0, 20)
+    switchBg.Size = UDim2.new(0, 38, 0, 20)
     switchBg.Position = UDim2.new(1, -45, 0.5, -10)
-    switchBg.BackgroundColor3 = Color3.fromRGB(80, 80, 85) -- Off: Abu-abu
+    switchBg.BackgroundColor3 = Color3.fromRGB(80, 80, 85)
     switchBg.Parent = parent
     Instance.new("UICorner", switchBg).CornerRadius = UDim.new(1, 0)
 
@@ -175,39 +189,39 @@ local function createSwitch(parent, onToggle)
         local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
         
         if state then
-            TweenService:Create(switchBg, tweenInfo, {BackgroundColor3 = Color3.fromRGB(50, 200, 50)}):Play() -- On: Hijau
+            TweenService:Create(switchBg, tweenInfo, {BackgroundColor3 = Color3.fromRGB(50, 200, 50)}):Play()
             TweenService:Create(circle, tweenInfo, {Position = UDim2.new(1, -18, 0.5, -8)}):Play()
         else
-            TweenService:Create(switchBg, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 85)}):Play() -- Off: Abu-abu
+            TweenService:Create(switchBg, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 85)}):Play()
             TweenService:Create(circle, tweenInfo, {Position = UDim2.new(0, 2, 0.5, -8)}):Play()
         end
         onToggle(state)
     end)
 end
 
--- HELPER: BIKIN SEKSI FITUR HORIZONTAL
+-- HELPER: ITEM HORIZONTAL PIPIN
 local function createFeatureHorizontal(titleText, defaultVal, onInputChanged, onToggleChanged)
     local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, 0, 0, 42)
+    container.Size = UDim2.new(1, 0, 0, 40)
     container.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
     container.BackgroundTransparency = 0.5
     container.Parent = Content
     Instance.new("UICorner", container).CornerRadius = UDim.new(0, 6)
 
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.42, 0, 1, 0)
-    label.Position = UDim2.new(0, 8, 0, 0)
+    label.Size = UDim2.new(0.4, 0, 1, 0)
+    label.Position = UDim2.new(0, 10, 0, 0)
     label.Text = titleText
     label.TextColor3 = Color3.fromRGB(255, 255, 255)
     label.Font = Enum.Font.GothamBold
-    label.TextSize = 11
+    label.TextSize = 12
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.BackgroundTransparency = 1
     label.Parent = container
 
     local box = Instance.new("TextBox")
-    box.Size = UDim2.new(0.22, 0, 0, 24)
-    box.Position = UDim2.new(0.43, 0, 0.5, -12)
+    box.Size = UDim2.new(0.25, 0, 0, 24)
+    box.Position = UDim2.new(0.42, 0, 0.5, -12)
     box.BackgroundColor3 = Color3.fromRGB(35, 15, 15)
     box.Text = tostring(defaultVal)
     box.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -228,7 +242,7 @@ end
 -- ============================================
 
 -- 1. WalkSpeed
-createFeatureHorizontal("WalkSpeed", 16, function(val)
+createFeatureHorizontal("WalkSpeed", OriginalWalkSpeed, function(val)
     local num = tonumber(val)
     if num then _G.WalkSpeedVal = num end
 end, function(state)
@@ -236,16 +250,24 @@ end, function(state)
 end)
 
 -- 2. Jump Height
-createFeatureHorizontal("JumpHeight", 50, function(val)
+createFeatureHorizontal("JumpHeight", OriginalJumpPower, function(val)
     local num = tonumber(val)
     if num then _G.JumpPowerVal = num end
 end, function(state)
     _G.JumpPowerToggle = state
 end)
 
--- 3. Infinite Jump
+-- 3. Fly Feature
+createFeatureHorizontal("Fly (Terbang)", 50, function(val)
+    local num = tonumber(val)
+    if num then _G.FlySpeed = num end
+end, function(state)
+    _G.FlyToggle = state
+end)
+
+-- 4. Infinite Jump
 local infContainer = Instance.new("Frame")
-infContainer.Size = UDim2.new(1, 0, 0, 42)
+infContainer.Size = UDim2.new(1, 0, 0, 40)
 infContainer.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
 infContainer.BackgroundTransparency = 0.5
 infContainer.Parent = Content
@@ -253,11 +275,11 @@ Instance.new("UICorner", infContainer).CornerRadius = UDim.new(0, 6)
 
 local infLabel = Instance.new("TextLabel")
 infLabel.Size = UDim2.new(0.6, 0, 1, 0)
-infLabel.Position = UDim2.new(0, 8, 0, 0)
+infLabel.Position = UDim2.new(0, 10, 0, 0)
 infLabel.Text = "Infinite Jump"
 infLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 infLabel.Font = Enum.Font.GothamBold
-infLabel.TextSize = 11
+infLabel.TextSize = 12
 infLabel.TextXAlignment = Enum.TextXAlignment.Left
 infLabel.BackgroundTransparency = 1
 infLabel.Parent = infContainer
@@ -266,33 +288,33 @@ createSwitch(infContainer, function(state)
     _G.InfJump = state
 end)
 
--- 4. Teleport
+-- 5. Teleport
 local tpContainer = Instance.new("Frame")
-tpContainer.Size = UDim2.new(1, 0, 0, 42)
+tpContainer.Size = UDim2.new(1, 0, 0, 40)
 tpContainer.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
 tpContainer.BackgroundTransparency = 0.5
 tpContainer.Parent = Content
 Instance.new("UICorner", tpContainer).CornerRadius = UDim.new(0, 6)
 
 local setBtn = Instance.new("TextButton")
-setBtn.Size = UDim2.new(0.46, 0, 0, 26)
-setBtn.Position = UDim2.new(0, 6, 0.5, -13)
+setBtn.Size = UDim2.new(0.47, 0, 0, 26)
+setBtn.Position = UDim2.new(0, 8, 0.5, -13)
 setBtn.BackgroundColor3 = Color3.fromRGB(35, 15, 15)
 setBtn.Text = "Set Point"
 setBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 setBtn.Font = Enum.Font.GothamBold
-setBtn.TextSize = 10
+setBtn.TextSize = 11
 setBtn.Parent = tpContainer
 Instance.new("UICorner", setBtn).CornerRadius = UDim.new(0, 4)
 
 local tpBtn = Instance.new("TextButton")
-tpBtn.Size = UDim2.new(0.46, 0, 0, 26)
+tpBtn.Size = UDim2.new(0.47, 0, 0, 26)
 tpBtn.Position = UDim2.new(0.5, 4, 0.5, -13)
 tpBtn.BackgroundColor3 = Color3.fromRGB(50, 20, 20)
 tpBtn.Text = "TP to Point"
 tpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 tpBtn.Font = Enum.Font.GothamBold
-tpBtn.TextSize = 10
+tpBtn.TextSize = 11
 tpBtn.Parent = tpContainer
 Instance.new("UICorner", tpBtn).CornerRadius = UDim.new(0, 4)
 
@@ -315,7 +337,7 @@ tpBtn.MouseButton1Click:Connect(function()
             hrp.CFrame = _G.SavedCFrame
         end
     else
-        tpBtn.Text = "No Point!"
+        tpBtn.Text = "No Point Saved!"
         task.wait(1)
         tpBtn.Text = "TP to Point"
     end
@@ -334,11 +356,11 @@ MinBtn.MouseButton1Click:Connect(function()
     if isMinimized then
         MinBtn.Text = "+"
         Content.Visible = false
-        TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 170, 0, 35)}):Play()
+        TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 180, 0, 35)}):Play()
         TweenService:Create(FrameCorner, tweenInfo, {CornerRadius = UDim.new(1, 0)}):Play()
     else
         MinBtn.Text = "-"
-        local tween = TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 260, 0, 290)})
+        local tween = TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 480, 0, 260)})
         TweenService:Create(FrameCorner, tweenInfo, {CornerRadius = UDim.new(0, 10)}):Play()
         tween:Play()
         tween.Completed:Connect(function()
@@ -362,6 +384,7 @@ YesBtn.MouseButton1Click:Connect(function()
     _G.WalkSpeedToggle = false
     _G.JumpPowerToggle = false
     _G.InfJump = false
+    _G.FlyToggle = false
     ScreenGui:Destroy()
 end)
 
@@ -376,6 +399,42 @@ UserInputService.JumpRequest:Connect(function()
     end
 end)
 
+-- FLY SYSTEM LOGIC
+local bodyVelocity, bodyGyro
+RunService.RenderStepped:Connect(function()
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    
+    if _G.FlyToggle and hrp then
+        if not bodyVelocity then
+            bodyVelocity = Instance.new("BodyVelocity")
+            bodyVelocity.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+            bodyVelocity.Parent = hrp
+
+            bodyGyro = Instance.new("BodyGyro")
+            bodyGyro.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
+            bodyGyro.P = 10000
+            bodyGyro.Parent = hrp
+        end
+        
+        local camera = workspace.CurrentCamera
+        bodyGyro.CFrame = camera.CFrame
+        
+        local moveDir = Vector3.zero
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + camera.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - camera.CFrame.LookVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - camera.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + camera.CFrame.RightVector end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
+
+        bodyVelocity.Velocity = moveDir * _G.FlySpeed
+    else
+        if bodyVelocity then bodyVelocity:Destroy() bodyVelocity = nil end
+        if bodyGyro then bodyGyro:Destroy() bodyGyro = nil end
+    end
+end)
+
 -- Loop Movement Manager
 task.spawn(function()
     while true do
@@ -383,16 +442,17 @@ task.spawn(function()
             local char = LocalPlayer.Character
             local hum = char and char:FindFirstChildOfClass("Humanoid")
             if hum then
+                -- Return Original Speed/Jump when OFF
                 if _G.WalkSpeedToggle then
                     hum.WalkSpeed = _G.WalkSpeedVal
                 else
-                    hum.WalkSpeed = 16
+                    hum.WalkSpeed = OriginalWalkSpeed
                 end
 
                 if _G.JumpPowerToggle then
                     hum.JumpPower = _G.JumpPowerVal
                 else
-                    hum.JumpPower = 50
+                    hum.JumpPower = OriginalJumpPower
                 end
             end
         end)
