@@ -1,153 +1,263 @@
 -- ============================================
--- NATIVE AUTO PICKUP EGG (SAFE & NO ERROR)
+-- EXZET HUB - ONTOP (NATIVE UI & MOVEMENT ONLY)
 -- ============================================
 
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+
 local LocalPlayer = Players.LocalPlayer
 
-local RemoteEgg = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Game"):WaitForChild("EggPickup")[cite: 1]
+-- State Variables
+_G.WalkSpeedVal = 16
+_G.JumpPowerVal = 50
+_G.InfJump = false
 
-_G.AutoPickup = false
-_G.TargetRarity = "Ethereal"
-
--- Clean up UI lama
+-- Clean Old UI
 local ParentGui = LocalPlayer:WaitForChild("PlayerGui")
-if ParentGui:FindFirstChild("EggHubGui") then
-    ParentGui.EggHubGui:Destroy()
+if ParentGui:FindFirstChild("ExzetOntopGui") then
+    ParentGui.ExzetOntopGui:Destroy()
 end
 
--- GUI Setup
+-- 1. MAIN SCREEN GUI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "EggHubGui"
+ScreenGui.Name = "ExzetOntopGui"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = ParentGui
 
+-- 2. MAIN FRAME (Transparan & Clean)
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 220, 0, 160)
-MainFrame.Position = UDim2.new(0.5, -110, 0.3, 0)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+MainFrame.Size = UDim2.new(0, 300, 0, 260)
+MainFrame.Position = UDim2.new(0.5, -150, 0.35, -130)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+MainFrame.BackgroundTransparency = 0.25
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 
--- Title Bar
+local MainStroke = Instance.new("UIStroke", MainFrame)
+MainStroke.Color = Color3.fromRGB(100, 100, 255)
+MainStroke.Thickness = 1.5
+MainStroke.Transparency = 0.3
+
+-- 3. HEADER BAR
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, 0, 0, 35)
+Header.BackgroundTransparency = 1
+Header.Parent = MainFrame
+
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -30, 0, 30)
-Title.Position = UDim2.new(0, 10, 0, 0)
-Title.Text = "Egg Pickup Hub"
+Title.Size = UDim2.new(1, -70, 1, 0)
+Title.Position = UDim2.new(0, 12, 0, 0)
+Title.Text = "Exzet Hub - Ontop"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 15
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 14
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.BackgroundTransparency = 1
-Title.Parent = MainFrame
+Title.Parent = Header
 
--- Minimize Button
+-- MINIMIZE BUTTON (-)
 local MinBtn = Instance.new("TextButton")
-MinBtn.Size = UDim2.new(0, 24, 0, 24)
-MinBtn.Position = UDim2.new(1, -27, 0, 3)
+MinBtn.Size = UDim2.new(0, 25, 0, 25)
+MinBtn.Position = UDim2.new(1, -60, 0, 5)
 MinBtn.Text = "-"
 MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-MinBtn.Font = Enum.Font.SourceSansBold
-MinBtn.Parent = MainFrame
-Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 4)
+MinBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+MinBtn.BackgroundTransparency = 0.3
+MinBtn.Font = Enum.Font.GothamBold
+MinBtn.TextSize = 16
+MinBtn.Parent = Header
+Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 6)
 
+-- CLOSE BUTTON (X)
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 25, 0, 25)
+CloseBtn.Position = UDim2.new(1, -30, 0, 5)
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+CloseBtn.BackgroundTransparency = 0.3
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.TextSize = 13
+CloseBtn.Parent = Header
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
+
+-- 4. FLOATING LOGO (XZ LINGKARAN)
+local MiniLogo = Instance.new("TextButton")
+MiniLogo.Size = UDim2.new(0, 45, 0, 45)
+MiniLogo.Position = UDim2.new(0.1, 0, 0.2, 0)
+MiniLogo.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+MiniLogo.BackgroundTransparency = 0.2
+MiniLogo.Text = "XZ"
+MiniLogo.TextColor3 = Color3.fromRGB(100, 150, 255)
+MiniLogo.Font = Enum.Font.GothamBold
+MiniLogo.TextSize = 16
+MiniLogo.Visible = false
+MiniLogo.Active = true
+MiniLogo.Draggable = true
+MiniLogo.Parent = ScreenGui
+
+Instance.new("UICorner", MiniLogo).CornerRadius = UDim.new(1, 0)
+local MiniStroke = Instance.new("UIStroke", MiniLogo)
+MiniStroke.Color = Color3.fromRGB(100, 100, 255)
+MiniStroke.Thickness = 2
+
+-- 5. POPUP CONFIRMATION CLOSE
+local ConfirmFrame = Instance.new("Frame")
+ConfirmFrame.Size = UDim2.new(0, 220, 0, 110)
+ConfirmFrame.Position = UDim2.new(0.5, -110, 0.5, -55)
+ConfirmFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+ConfirmFrame.BackgroundTransparency = 0.1
+ConfirmFrame.Visible = false
+ConfirmFrame.Parent = ScreenGui
+
+Instance.new("UICorner", ConfirmFrame).CornerRadius = UDim.new(0, 8)
+local ConfirmStroke = Instance.new("UIStroke", ConfirmFrame)
+ConfirmStroke.Color = Color3.fromRGB(255, 80, 80)
+
+local ConfirmText = Instance.new("TextLabel")
+ConfirmText.Size = UDim2.new(1, -20, 0, 40)
+ConfirmText.Position = UDim2.new(0, 10, 0, 10)
+ConfirmText.Text = "Tutup Script?\n(Harus re-execute ulang)"
+ConfirmText.TextColor3 = Color3.fromRGB(255, 255, 255)
+ConfirmText.Font = Enum.Font.Gotham
+ConfirmText.TextSize = 12
+ConfirmText.BackgroundTransparency = 1
+ConfirmText.Parent = ConfirmFrame
+
+local YesBtn = Instance.new("TextButton")
+YesBtn.Size = UDim2.new(0, 80, 0, 30)
+YesBtn.Position = UDim2.new(0.15, 0, 0, 65)
+YesBtn.Text = "Ya"
+YesBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+YesBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+YesBtn.Font = Enum.Font.GothamBold
+YesBtn.Parent = ConfirmFrame
+Instance.new("UICorner", YesBtn).CornerRadius = UDim.new(0, 6)
+
+local NoBtn = Instance.new("TextButton")
+NoBtn.Size = UDim2.new(0, 80, 0, 30)
+NoBtn.Position = UDim2.new(0.55, 0, 0, 65)
+NoBtn.Text = "Batal"
+NoBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+NoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+NoBtn.Font = Enum.Font.GothamBold
+NoBtn.Parent = ConfirmFrame
+Instance.new("UICorner", NoBtn).CornerRadius = UDim.new(0, 6)
+
+-- CONTENT FITUR
 local Content = Instance.new("Frame")
-Content.Size = UDim2.new(1, 0, 1, -30)
-Content.Position = UDim2.new(0, 0, 0, 30)
+Content.Size = UDim2.new(1, -20, 1, -45)
+Content.Position = UDim2.new(0, 10, 0, 40)
 Content.BackgroundTransparency = 1
 Content.Parent = MainFrame
 
--- Toggle Auto Pickup
-local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Size = UDim2.new(0.9, 0, 0, 38)
-ToggleBtn.Position = UDim2.new(0.05, 0, 0, 10)
-ToggleBtn.Text = "Auto Pickup: OFF"
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleBtn.Font = Enum.Font.SourceSansBold
-ToggleBtn.TextSize = 14
-ToggleBtn.Parent = Content
-Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 6)
+local UIList = Instance.new("UIListLayout", Content)
+UIList.Padding = UDim.new(0, 10)
 
--- Input Rarity Box
-local RarityBox = Instance.new("TextBox")
-RarityBox.Size = UDim2.new(0.9, 0, 0, 38)
-RarityBox.Position = UDim2.new(0.05, 0, 0, 55)
-RarityBox.Text = _G.TargetRarity
-RarityBox.PlaceholderText = "Ketik Rarity..."
-RarityBox.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
-RarityBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-RarityBox.Font = Enum.Font.SourceSans
-RarityBox.TextSize = 14
-RarityBox.Parent = Content
-Instance.new("UICorner", RarityBox).CornerRadius = UDim.new(0, 6)
-
--- Minimize Event
-local IsMin = false
-MinBtn.MouseButton1Click:Connect(function()
-    IsMin = not IsMin
-    Content.Visible = not IsMin
-    MainFrame.Size = IsMin and UDim2.new(0, 220, 0, 30) or UDim2.new(0, 220, 0, 160)
-    MinBtn.Text = IsMin and "+" or "-"
-end)
-
--- Rarity Box Event
-RarityBox.FocusLost:Connect(function()
-    if RarityBox.Text ~= "" then
-        _G.TargetRarity = RarityBox.Text
-    end
-end)
-
--- Toggle Event
-ToggleBtn.MouseButton1Click:Connect(function()
-    _G.AutoPickup = not _G.AutoPickup
-    if _G.AutoPickup then
-        ToggleBtn.Text = "Auto Pickup: ON"
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(40, 180, 40)
-    else
-        ToggleBtn.Text = "Auto Pickup: OFF"
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-    end
-end)
-
--- Logika Extract UUID & Auto Fire
-local function extractEggUUID(obj)
-    if type(obj.Name) == "string" and string.len(obj.Name) == 36 and string.find(obj.Name, "-") then
-        return obj.Name
-    end
+-- HELPER MAKER FUNGSI UI
+local function createInput(placeholder, default, callback)
+    local box = Instance.new("TextBox")
+    box.Size = UDim2.new(1, 0, 0, 40)
+    box.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    box.BackgroundTransparency = 0.4
+    box.Text = tostring(default)
+    box.PlaceholderText = placeholder
+    box.TextColor3 = Color3.fromRGB(255, 255, 255)
+    box.Font = Enum.Font.Gotham
+    box.TextSize = 12
+    box.Parent = Content
+    Instance.new("UICorner", box).CornerRadius = UDim.new(0, 6)
     
-    local attributes = obj:GetAttributes()
-    for attrName, attrVal in pairs(attributes) do
-        if type(attrVal) == "string" and string.len(attrVal) == 36 and string.find(attrVal, "-") then
-            return attrVal
-        end
-    end
-    return nil
+    box.FocusLost:Connect(function()
+        callback(box.Text)
+    end)
 end
 
+local function createToggle(text, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 40)
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    btn.BackgroundTransparency = 0.4
+    btn.Text = text .. ": OFF"
+    btn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    btn.Font = Enum.Font.Gotham
+    btn.TextSize = 12
+    btn.Parent = Content
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+    
+    local state = false
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        btn.Text = text .. (state and ": ON" or ": OFF")
+        btn.TextColor3 = state and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(200, 200, 200)
+        callback(state)
+    end)
+end
+
+-- FITUR MOVEMENT
+createInput("WalkSpeed (Kecepatan)", 16, function(val)
+    local num = tonumber(val)
+    if num then _G.WalkSpeedVal = num end
+end)
+
+createInput("Jump Power (Tinggi Lompat)", 50, function(val)
+    local num = tonumber(val)
+    if num then _G.JumpPowerVal = num end
+end)
+
+createToggle("Infinite Jump", function(state)
+    _G.InfJump = state
+end)
+
+-- EVENT HANDLERS
+MinBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    MiniLogo.Visible = true
+end)
+
+MiniLogo.MouseButton1Click:Connect(function()
+    MainFrame.Visible = true
+    MiniLogo.Visible = false
+end)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    ConfirmFrame.Visible = true
+end)
+
+NoBtn.MouseButton1Click:Connect(function()
+    ConfirmFrame.Visible = false
+end)
+
+YesBtn.MouseButton1Click:Connect(function()
+    _G.InfJump = false
+    ScreenGui:Destroy()
+end)
+
+-- INFINITE JUMP LISTENER
+UserInputService.JumpRequest:Connect(function()
+    if _G.InfJump then
+        local char = LocalPlayer.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end
+end)
+
+-- LOOP MOVEMENT UPDATE
 task.spawn(function()
     while true do
-        if _G.AutoPickup then
-            for _, obj in pairs(workspace:GetDescendants()) do
-                if not _G.AutoPickup then break end
-                
-                local origRarity = obj:GetAttribute("A_OrigRarity") or obj.Name[cite: 3]
-                local cleanRarity = string.gsub(tostring(origRarity), "-", "")
-                
-                if cleanRarity:lower() == tostring(_G.TargetRarity):lower() then
-                    local eggUUID = extractEggUUID(obj)
-                    if eggUUID then
-                        RemoteEgg:FireServer(eggUUID)[cite: 1]
-                        task.wait(0.05)
-                    end
-                end
+        pcall(function()
+            local char = LocalPlayer.Character
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum.WalkSpeed = _G.WalkSpeedVal
+                hum.JumpPower = _G.JumpPowerVal
             end
-        end
-        task.wait(0.3)
+        end)
+        task.wait(0.2)
     end
 end)
