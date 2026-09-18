@@ -1,34 +1,37 @@
 -- ============================================
--- EXZET HUB - ONTOP (NATIVE UI & MOVEMENT ONLY)
+-- EXZET HUB - ONTOP (RED & BLACK EDITION)
 -- ============================================
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
-
 local LocalPlayer = Players.LocalPlayer
 
 -- State Variables
+_G.WalkSpeedToggle = false
 _G.WalkSpeedVal = 16
+
+_G.JumpPowerToggle = false
 _G.JumpPowerVal = 50
+
 _G.InfJump = false
 
 -- Clean Old UI
 local ParentGui = LocalPlayer:WaitForChild("PlayerGui")
-if ParentGui:FindFirstChild("ExzetOntopGui") then
-    ParentGui.ExzetOntopGui:Destroy()
+if ParentGui:FindFirstChild("ExzetOntopRed") then
+    ParentGui.ExzetOntopRed:Destroy()
 end
 
 -- 1. MAIN SCREEN GUI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ExzetOntopGui"
+ScreenGui.Name = "ExzetOntopRed"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = ParentGui
 
--- 2. MAIN FRAME (Transparan & Clean)
+-- 2. MAIN FRAME (Merah-Hitam Transparan)
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 300, 0, 260)
-MainFrame.Position = UDim2.new(0.5, -150, 0.35, -130)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+MainFrame.Size = UDim2.new(0, 300, 0, 330)
+MainFrame.Position = UDim2.new(0.5, -150, 0.35, -165)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 5, 5)
 MainFrame.BackgroundTransparency = 0.25
 MainFrame.Active = true
 MainFrame.Draggable = true
@@ -37,7 +40,7 @@ MainFrame.Parent = ScreenGui
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 
 local MainStroke = Instance.new("UIStroke", MainFrame)
-MainStroke.Color = Color3.fromRGB(100, 100, 255)
+MainStroke.Color = Color3.fromRGB(220, 30, 30)
 MainStroke.Thickness = 1.5
 MainStroke.Transparency = 0.3
 
@@ -64,7 +67,7 @@ MinBtn.Size = UDim2.new(0, 25, 0, 25)
 MinBtn.Position = UDim2.new(1, -60, 0, 5)
 MinBtn.Text = "-"
 MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+MinBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
 MinBtn.BackgroundTransparency = 0.3
 MinBtn.Font = Enum.Font.GothamBold
 MinBtn.TextSize = 16
@@ -77,152 +80,219 @@ CloseBtn.Size = UDim2.new(0, 25, 0, 25)
 CloseBtn.Position = UDim2.new(1, -30, 0, 5)
 CloseBtn.Text = "X"
 CloseBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
 CloseBtn.BackgroundTransparency = 0.3
 CloseBtn.Font = Enum.Font.GothamBold
 CloseBtn.TextSize = 13
 CloseBtn.Parent = Header
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
 
--- 4. FLOATING LOGO (XZ LINGKARAN)
-local MiniLogo = Instance.new("TextButton")
-MiniLogo.Size = UDim2.new(0, 45, 0, 45)
-MiniLogo.Position = UDim2.new(0.1, 0, 0.2, 0)
-MiniLogo.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-MiniLogo.BackgroundTransparency = 0.2
-MiniLogo.Text = "XZ"
-MiniLogo.TextColor3 = Color3.fromRGB(100, 150, 255)
-MiniLogo.Font = Enum.Font.GothamBold
-MiniLogo.TextSize = 16
-MiniLogo.Visible = false
-MiniLogo.Active = true
-MiniLogo.Draggable = true
-MiniLogo.Parent = ScreenGui
+-- 4. MINIMIZE BAR (Bentuk Panjang Kapsul Bulat)
+local MiniBar = Instance.new("TextButton")
+MiniBar.Size = UDim2.new(0, 160, 0, 32)
+MiniBar.Position = UDim2.new(0.1, 0, 0.2, 0)
+MiniBar.BackgroundColor3 = Color3.fromRGB(15, 5, 5)
+MiniBar.BackgroundTransparency = 0.2
+MiniBar.Text = "Exzet Hub - Ontop"
+MiniBar.TextColor3 = Color3.fromRGB(255, 60, 60)
+MiniBar.Font = Enum.Font.GothamBold
+MiniBar.TextSize = 12
+MiniBar.Visible = false
+MiniBar.Active = true
+MiniBar.Draggable = true
+MiniBar.Parent = ScreenGui
 
-Instance.new("UICorner", MiniLogo).CornerRadius = UDim.new(1, 0)
-local MiniStroke = Instance.new("UIStroke", MiniLogo)
-MiniStroke.Color = Color3.fromRGB(100, 100, 255)
-MiniStroke.Thickness = 2
+Instance.new("UICorner", MiniBar).CornerRadius = UDim.new(1, 0) -- Halus / Bulat Kapsul
+local MiniStroke = Instance.new("UIStroke", MiniBar)
+MiniStroke.Color = Color3.fromRGB(220, 30, 30)
+MiniStroke.Thickness = 1.5
 
--- 5. POPUP CONFIRMATION CLOSE
+-- 5. CONFIRMATION CLOSE POPUP
 local ConfirmFrame = Instance.new("Frame")
-ConfirmFrame.Size = UDim2.new(0, 220, 0, 110)
-ConfirmFrame.Position = UDim2.new(0.5, -110, 0.5, -55)
-ConfirmFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+ConfirmFrame.Size = UDim2.new(0, 200, 0, 100)
+ConfirmFrame.Position = UDim2.new(0.5, -100, 0.5, -50)
+ConfirmFrame.BackgroundColor3 = Color3.fromRGB(15, 5, 5)
 ConfirmFrame.BackgroundTransparency = 0.1
 ConfirmFrame.Visible = false
 ConfirmFrame.Parent = ScreenGui
 
 Instance.new("UICorner", ConfirmFrame).CornerRadius = UDim.new(0, 8)
 local ConfirmStroke = Instance.new("UIStroke", ConfirmFrame)
-ConfirmStroke.Color = Color3.fromRGB(255, 80, 80)
+ConfirmStroke.Color = Color3.fromRGB(220, 30, 30)
 
 local ConfirmText = Instance.new("TextLabel")
-ConfirmText.Size = UDim2.new(1, -20, 0, 40)
-ConfirmText.Position = UDim2.new(0, 10, 0, 10)
-ConfirmText.Text = "Tutup Script?\n(Harus re-execute ulang)"
+ConfirmText.Size = UDim2.new(1, -20, 0, 30)
+ConfirmText.Position = UDim2.new(0, 10, 0, 15)
+ConfirmText.Text = "confirm to close script"
 ConfirmText.TextColor3 = Color3.fromRGB(255, 255, 255)
 ConfirmText.Font = Enum.Font.Gotham
-ConfirmText.TextSize = 12
+ConfirmText.TextSize = 13
 ConfirmText.BackgroundTransparency = 1
 ConfirmText.Parent = ConfirmFrame
 
 local YesBtn = Instance.new("TextButton")
-YesBtn.Size = UDim2.new(0, 80, 0, 30)
-YesBtn.Position = UDim2.new(0.15, 0, 0, 65)
-YesBtn.Text = "Ya"
-YesBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+YesBtn.Size = UDim2.new(0, 75, 0, 28)
+YesBtn.Position = UDim2.new(0.12, 0, 0, 55)
+YesBtn.Text = "Yes"
+YesBtn.BackgroundColor3 = Color3.fromRGB(180, 30, 30)
 YesBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 YesBtn.Font = Enum.Font.GothamBold
 YesBtn.Parent = ConfirmFrame
 Instance.new("UICorner", YesBtn).CornerRadius = UDim.new(0, 6)
 
 local NoBtn = Instance.new("TextButton")
-NoBtn.Size = UDim2.new(0, 80, 0, 30)
-NoBtn.Position = UDim2.new(0.55, 0, 0, 65)
-NoBtn.Text = "Batal"
-NoBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+NoBtn.Size = UDim2.new(0, 75, 0, 28)
+NoBtn.Position = UDim2.new(0.52, 0, 0, 55)
+NoBtn.Text = "No"
+NoBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
 NoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 NoBtn.Font = Enum.Font.GothamBold
 NoBtn.Parent = ConfirmFrame
 Instance.new("UICorner", NoBtn).CornerRadius = UDim.new(0, 6)
 
--- CONTENT FITUR
-local Content = Instance.new("Frame")
+-- CONTAINER FITUR
+local Content = Instance.new("ScrollingFrame")
 Content.Size = UDim2.new(1, -20, 1, -45)
 Content.Position = UDim2.new(0, 10, 0, 40)
 Content.BackgroundTransparency = 1
+Content.CanvasSize = UDim2.new(0, 0, 0, 270)
+Content.ScrollBarThickness = 3
+Content.ScrollBarImageColor3 = Color3.fromRGB(220, 30, 30)
 Content.Parent = MainFrame
 
 local UIList = Instance.new("UIListLayout", Content)
-UIList.Padding = UDim.new(0, 10)
+UIList.Padding = UDim.new(0, 12)
 
--- HELPER MAKER FUNGSI UI
-local function createInput(placeholder, default, callback)
+-- HELPER: BIKIN SEKSI FITUR DENGAN INPUT & TOGGLE ON/OFF
+local function createFeatureSection(titleText, defaultVal, onInputChanged, onToggleChanged)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, 0, 0, 70)
+    container.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
+    container.BackgroundTransparency = 0.5
+    container.Parent = Content
+    Instance.new("UICorner", container).CornerRadius = UDim.new(0, 6)
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -10, 0, 22)
+    label.Position = UDim2.new(0, 8, 0, 5)
+    label.Text = titleText
+    label.TextColor3 = Color3.fromRGB(255, 200, 200)
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 12
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.BackgroundTransparency = 1
+    label.Parent = container
+
     local box = Instance.new("TextBox")
-    box.Size = UDim2.new(1, 0, 0, 40)
-    box.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    box.BackgroundTransparency = 0.4
-    box.Text = tostring(default)
-    box.PlaceholderText = placeholder
+    box.Size = UDim2.new(0.55, -10, 0, 30)
+    box.Position = UDim2.new(0, 8, 0, 32)
+    box.BackgroundColor3 = Color3.fromRGB(35, 15, 15)
+    box.Text = tostring(defaultVal)
+    box.PlaceholderText = "Angka..."
     box.TextColor3 = Color3.fromRGB(255, 255, 255)
     box.Font = Enum.Font.Gotham
     box.TextSize = 12
-    box.Parent = Content
-    Instance.new("UICorner", box).CornerRadius = UDim.new(0, 6)
-    
+    box.Parent = container
+    Instance.new("UICorner", box).CornerRadius = UDim.new(0, 4)
+
+    local toggle = Instance.new("TextButton")
+    toggle.Size = UDim2.new(0.4, 0, 0, 30)
+    toggle.Position = UDim2.new(0.57, 0, 0, 32)
+    toggle.BackgroundColor3 = Color3.fromRGB(50, 20, 20)
+    toggle.Text = "OFF"
+    toggle.TextColor3 = Color3.fromRGB(200, 200, 200)
+    toggle.Font = Enum.Font.GothamBold
+    toggle.TextSize = 12
+    toggle.Parent = container
+    Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 4)
+
     box.FocusLost:Connect(function()
-        callback(box.Text)
+        onInputChanged(box.Text)
     end)
-end
 
-local function createToggle(text, callback)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 0, 40)
-    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    btn.BackgroundTransparency = 0.4
-    btn.Text = text .. ": OFF"
-    btn.TextColor3 = Color3.fromRGB(200, 200, 200)
-    btn.Font = Enum.Font.Gotham
-    btn.TextSize = 12
-    btn.Parent = Content
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-    
     local state = false
-    btn.MouseButton1Click:Connect(function()
+    toggle.MouseButton1Click:Connect(function()
         state = not state
-        btn.Text = text .. (state and ": ON" or ": OFF")
-        btn.TextColor3 = state and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(200, 200, 200)
-        callback(state)
+        toggle.Text = state and "ON" or "OFF"
+        toggle.BackgroundColor3 = state and Color3.fromRGB(180, 30, 30) or Color3.fromRGB(50, 20, 20)
+        toggle.TextColor3 = state and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200)
+        onToggleChanged(state)
     end)
 end
 
--- FITUR MOVEMENT
-createInput("WalkSpeed (Kecepatan)", 16, function(val)
+-- ============================================
+-- SETUP FITUR-FITUR
+-- ============================================
+
+-- 1. WalkSpeed (Kecepatan Jalan)
+createFeatureSection("WalkSpeed (Kecepatan Jalan)", 16, function(val)
     local num = tonumber(val)
     if num then _G.WalkSpeedVal = num end
+end, function(state)
+    _G.WalkSpeedToggle = state
 end)
 
-createInput("Jump Power (Tinggi Lompat)", 50, function(val)
+-- 2. Jump Height (Tinggi Lompatan)
+createFeatureSection("Jump Height (Tinggi Lompatan)", 50, function(val)
     local num = tonumber(val)
     if num then _G.JumpPowerVal = num end
+end, function(state)
+    _G.JumpPowerToggle = state
 end)
 
-createToggle("Infinite Jump", function(state)
-    _G.InfJump = state
+-- 3. Infinite Jump (Lompat Tanpa Batas)
+local infContainer = Instance.new("Frame")
+infContainer.Size = UDim2.new(1, 0, 0, 45)
+infContainer.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
+infContainer.BackgroundTransparency = 0.5
+infContainer.Parent = Content
+Instance.new("UICorner", infContainer).CornerRadius = UDim.new(0, 6)
+
+local infLabel = Instance.new("TextLabel")
+infLabel.Size = UDim2.new(0.55, -10, 1, 0)
+infLabel.Position = UDim2.new(0, 8, 0, 0)
+infLabel.Text = "Infinite Jump"
+infLabel.TextColor3 = Color3.fromRGB(255, 200, 200)
+infLabel.Font = Enum.Font.GothamBold
+infLabel.TextSize = 12
+infLabel.TextXAlignment = Enum.TextXAlignment.Left
+infLabel.BackgroundTransparency = 1
+infLabel.Parent = infContainer
+
+local infToggle = Instance.new("TextButton")
+infToggle.Size = UDim2.new(0.4, 0, 0, 30)
+infToggle.Position = UDim2.new(0.57, 0, 0, 7.5)
+infToggle.BackgroundColor3 = Color3.fromRGB(50, 20, 20)
+infToggle.Text = "OFF"
+infToggle.TextColor3 = Color3.fromRGB(200, 200, 200)
+infToggle.Font = Enum.Font.GothamBold
+infToggle.TextSize = 12
+infToggle.Parent = infContainer
+Instance.new("UICorner", infToggle).CornerRadius = UDim.new(0, 4)
+
+infToggle.MouseButton1Click:Connect(function()
+    _G.InfJump = not _G.InfJump
+    infToggle.Text = _G.InfJump and "ON" or "OFF"
+    infToggle.BackgroundColor3 = _G.InfJump and Color3.fromRGB(180, 30, 30) or Color3.fromRGB(50, 20, 20)
+    infToggle.TextColor3 = _G.InfJump and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200)
 end)
 
--- EVENT HANDLERS
+-- ============================================
+-- LOGIKA EVENT & SYSTEM
+-- ============================================
+
+-- Minimize Logika
 MinBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = false
-    MiniLogo.Visible = true
+    MiniBar.Visible = true
 end)
 
-MiniLogo.MouseButton1Click:Connect(function()
+MiniBar.MouseButton1Click:Connect(function()
     MainFrame.Visible = true
-    MiniLogo.Visible = false
+    MiniBar.Visible = false
 end)
 
+-- Close Logika
 CloseBtn.MouseButton1Click:Connect(function()
     ConfirmFrame.Visible = true
 end)
@@ -232,11 +302,13 @@ NoBtn.MouseButton1Click:Connect(function()
 end)
 
 YesBtn.MouseButton1Click:Connect(function()
+    _G.WalkSpeedToggle = false
+    _G.JumpPowerToggle = false
     _G.InfJump = false
     ScreenGui:Destroy()
 end)
 
--- INFINITE JUMP LISTENER
+-- Infinite Jump Listener
 UserInputService.JumpRequest:Connect(function()
     if _G.InfJump then
         local char = LocalPlayer.Character
@@ -247,15 +319,26 @@ UserInputService.JumpRequest:Connect(function()
     end
 end)
 
--- LOOP MOVEMENT UPDATE
+-- Loop Movement Manager
 task.spawn(function()
     while true do
         pcall(function()
             local char = LocalPlayer.Character
             local hum = char and char:FindFirstChildOfClass("Humanoid")
             if hum then
-                hum.WalkSpeed = _G.WalkSpeedVal
-                hum.JumpPower = _G.JumpPowerVal
+                -- WalkSpeed Manager
+                if _G.WalkSpeedToggle then
+                    hum.WalkSpeed = _G.WalkSpeedVal
+                else
+                    hum.WalkSpeed = 16 -- Kembalikan ke Normal
+                end
+
+                -- Jump Height Manager
+                if _G.JumpPowerToggle then
+                    hum.JumpPower = _G.JumpPowerVal
+                else
+                    hum.JumpPower = 50 -- Kembalikan ke Normal
+                end
             end
         end)
         task.wait(0.2)
