@@ -1,5 +1,5 @@
 -- ============================================
--- EXZET HUB - ONTOP (FIXED MAP SPEED & FLY)
+-- EXZET HUB - ONTOP (SAFE SPEED & REAL FLY)
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -10,10 +10,10 @@ local LocalPlayer = Players.LocalPlayer
 
 -- Global States
 _G.WalkSpeedToggle = false
-_G.WalkSpeedVal = 16
+_G.WalkSpeedVal = 50
 
 _G.JumpPowerToggle = false
-_G.JumpPowerVal = 50
+_G.JumpPowerVal = 100
 
 _G.FlyToggle = false
 _G.FlySpeed = 50
@@ -21,37 +21,15 @@ _G.FlySpeed = 50
 _G.InfJump = false
 _G.SavedCFrame = nil
 
--- SIMPAN DATA NORMAL DARI MAP
-local OriginalWalkSpeed = 16
-local OriginalJumpPower = 50
-
-local function SaveOriginalStats(char)
-    if not char then return end
-    local hum = char:WaitForChild("Humanoid", 5)
-    if hum then
-        task.wait(0.5) -- Tunggu script map selesai setup speed dasar
-        OriginalWalkSpeed = hum.WalkSpeed
-        OriginalJumpPower = hum.JumpPower
-    end
-end
-
-if LocalPlayer.Character then
-    SaveOriginalStats(LocalPlayer.Character)
-end
-
-LocalPlayer.CharacterAdded:Connect(function(char)
-    SaveOriginalStats(char)
-end)
-
 -- Clean Old UI
 local ParentGui = LocalPlayer:WaitForChild("PlayerGui")
-if ParentGui:FindFirstChild("ExzetOntopFixed") then
-    ParentGui.ExzetOntopFixed:Destroy()
+if ParentGui:FindFirstChild("ExzetFinalHub") then
+    ParentGui.ExzetFinalHub:Destroy()
 end
 
 -- 1. MAIN SCREEN GUI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ExzetOntopFixed"
+ScreenGui.Name = "ExzetFinalHub"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = ParentGui
 
@@ -254,7 +232,7 @@ local function createFeatureHorizontal(titleText, defaultVal, onInputChanged, on
 end
 
 -- FITUR 1: WalkSpeed
-createFeatureHorizontal("WalkSpeed", 32, function(val)
+createFeatureHorizontal("WalkSpeed", 50, function(val)
     local num = tonumber(val)
     if num then _G.WalkSpeedVal = num end
 end, function(state)
@@ -401,46 +379,44 @@ UserInputService.JumpRequest:Connect(function()
     end
 end)
 
--- FLY MECHANIC FIXED (WORK IN PC & MOBILE)
-local bv, bg
+-- FLY MECHANIC (SMOOTH REAL FLYING WITH CAMERA ANGLE)
+local flyBodyVelocity, flyBodyGyro
 RunService.RenderStepped:Connect(function()
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     local hum = char and char:FindFirstChildOfClass("Humanoid")
 
     if _G.FlyToggle and hrp and hum then
-        if not bv then
-            bv = Instance.new("BodyVelocity")
-            bv.MaxForce = Vector3.new(1e6, 1e6, 1e6)
-            bv.Velocity = Vector3.zero
-            bv.Parent = hrp
+        if not flyBodyVelocity then
+            flyBodyVelocity = Instance.new("BodyVelocity")
+            flyBodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
+            flyBodyVelocity.Parent = hrp
 
-            bg = Instance.new("BodyGyro")
-            bg.MaxTorque = Vector3.new(1e6, 1e6, 1e6)
-            bg.P = 9000
-            bg.CFrame = hrp.CFrame
-            bg.Parent = hrp
+            flyBodyGyro = Instance.new("BodyGyro")
+            flyBodyGyro.MaxTorque = Vector3.new(1e6, 1e6, 1e6)
+            flyBodyGyro.P = 9000
+            flyBodyGyro.Parent = hrp
         end
 
         hum.PlatformStand = true
         local cam = workspace.CurrentCamera
+        flyBodyGyro.CFrame = cam.CFrame
+
         local moveDir = hum.MoveDirection
-
         if moveDir.Magnitude > 0 then
-            bv.Velocity = cam.CFrame:VectorToWorldSpace(cam.CFrame:VectorToObjectSpace(moveDir)) * _G.FlySpeed
+            -- Mendorong posisi sesuai arah kamera (termasuk naik ke atas saat kamera diarahin ke atas)
+            flyBodyVelocity.Velocity = cam.CFrame.LookVector * (moveDir.Magnitude * _G.FlySpeed)
         else
-            bv.Velocity = Vector3.zero
+            flyBodyVelocity.Velocity = Vector3.zero
         end
-
-        bg.CFrame = cam.CFrame
     else
-        if bv then bv:Destroy() bv = nil end
-        if bg then bg:Destroy() bg = nil end
+        if flyBodyVelocity then flyBodyVelocity:Destroy() flyBodyVelocity = nil end
+        if flyBodyGyro then flyBodyGyro:Destroy() flyBodyGyro = nil end
         if hum then hum.PlatformStand = false end
     end
 end)
 
--- MOVEMENT LOOP (WALKSPEED & JUMP POWER)
+-- MOVEMENT LISTENER (HANYA MENGUBAH APABILA TOMBOL TOGGLE ON)
 task.spawn(function()
     while true do
         pcall(function()
@@ -449,14 +425,10 @@ task.spawn(function()
             if hum then
                 if _G.WalkSpeedToggle then
                     hum.WalkSpeed = _G.WalkSpeedVal
-                else
-                    hum.WalkSpeed = OriginalWalkSpeed
                 end
 
                 if _G.JumpPowerToggle then
                     hum.JumpPower = _G.JumpPowerVal
-                else
-                    hum.JumpPower = OriginalJumpPower
                 end
             end
         end)
