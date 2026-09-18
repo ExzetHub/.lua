@@ -1,5 +1,5 @@
 -- ============================================
--- EXZET HUB - ONTOP (WIDE LANDSCAPE + FLY)
+-- EXZET HUB - ONTOP (FIXED MAP SPEED & FLY)
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -8,41 +8,57 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
--- Menyimpan Nilai Bawaan Map Asli
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local Humanoid = Character:WaitForChild("Humanoid")
-local OriginalWalkSpeed = Humanoid.WalkSpeed
-local OriginalJumpPower = Humanoid.JumpPower
-
--- State Variables
+-- Global States
 _G.WalkSpeedToggle = false
-_G.WalkSpeedVal = OriginalWalkSpeed
+_G.WalkSpeedVal = 16
 
 _G.JumpPowerToggle = false
-_G.JumpPowerVal = OriginalJumpPower
-
-_G.InfJump = false
-_G.SavedCFrame = nil
+_G.JumpPowerVal = 50
 
 _G.FlyToggle = false
 _G.FlySpeed = 50
 
+_G.InfJump = false
+_G.SavedCFrame = nil
+
+-- SIMPAN DATA NORMAL DARI MAP
+local OriginalWalkSpeed = 16
+local OriginalJumpPower = 50
+
+local function SaveOriginalStats(char)
+    if not char then return end
+    local hum = char:WaitForChild("Humanoid", 5)
+    if hum then
+        task.wait(0.5) -- Tunggu script map selesai setup speed dasar
+        OriginalWalkSpeed = hum.WalkSpeed
+        OriginalJumpPower = hum.JumpPower
+    end
+end
+
+if LocalPlayer.Character then
+    SaveOriginalStats(LocalPlayer.Character)
+end
+
+LocalPlayer.CharacterAdded:Connect(function(char)
+    SaveOriginalStats(char)
+end)
+
 -- Clean Old UI
 local ParentGui = LocalPlayer:WaitForChild("PlayerGui")
-if ParentGui:FindFirstChild("ExzetWideHub") then
-    ParentGui.ExzetWideHub:Destroy()
+if ParentGui:FindFirstChild("ExzetOntopFixed") then
+    ParentGui.ExzetOntopFixed:Destroy()
 end
 
 -- 1. MAIN SCREEN GUI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ExzetWideHub"
+ScreenGui.Name = "ExzetOntopFixed"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = ParentGui
 
--- 2. MAIN FRAME (Panjang Kesamping Keseluruhan)
+-- 2. MAIN FRAME (Panjang Horizontal)
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 480, 0, 260)
-MainFrame.Position = UDim2.new(0.5, -240, 0.35, -130)
+MainFrame.Size = UDim2.new(0, 460, 0, 250)
+MainFrame.Position = UDim2.new(0.5, -230, 0.35, -125)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 5, 5)
 MainFrame.BackgroundTransparency = 0.25
 MainFrame.Active = true
@@ -66,7 +82,7 @@ Header.Parent = MainFrame
 
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -70, 1, 0)
-Title.Position = UDim2.new(0, 14, 0, 0)
+Title.Position = UDim2.new(0, 12, 0, 0)
 Title.Text = "Exzet Hub - Ontop"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
@@ -148,12 +164,12 @@ NoBtn.ZIndex = 11
 NoBtn.Parent = ConfirmFrame
 Instance.new("UICorner", NoBtn).CornerRadius = UDim.new(0, 5)
 
--- CONTAINER CONTENT (MEMANJANG KESAMPING)
+-- CONTENT SCROLL
 local Content = Instance.new("ScrollingFrame")
-Content.Size = UDim2.new(1, -20, 1, -45)
-Content.Position = UDim2.new(0, 10, 0, 38)
+Content.Size = UDim2.new(1, -20, 1, -42)
+Content.Position = UDim2.new(0, 10, 0, 36)
 Content.BackgroundTransparency = 1
-Content.CanvasSize = UDim2.new(0, 0, 0, 230)
+Content.CanvasSize = UDim2.new(0, 0, 0, 220)
 Content.ScrollBarThickness = 2
 Content.ScrollBarImageColor3 = Color3.fromRGB(220, 30, 30)
 Content.Parent = MainFrame
@@ -161,7 +177,7 @@ Content.Parent = MainFrame
 local UIList = Instance.new("UIListLayout", Content)
 UIList.Padding = UDim.new(0, 8)
 
--- HELPER: TOGGLE SWITCH (HIJAU / ABU-ABU)
+-- HELPER: SWITCH TOGGLE
 local function createSwitch(parent, onToggle)
     local switchBg = Instance.new("Frame")
     switchBg.Size = UDim2.new(0, 38, 0, 20)
@@ -199,10 +215,10 @@ local function createSwitch(parent, onToggle)
     end)
 end
 
--- HELPER: ITEM HORIZONTAL PIPIN
+-- HELPER: ITEM HORIZONTAL
 local function createFeatureHorizontal(titleText, defaultVal, onInputChanged, onToggleChanged)
     local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, 0, 0, 40)
+    container.Size = UDim2.new(1, 0, 0, 38)
     container.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
     container.BackgroundTransparency = 0.5
     container.Parent = Content
@@ -214,7 +230,7 @@ local function createFeatureHorizontal(titleText, defaultVal, onInputChanged, on
     label.Text = titleText
     label.TextColor3 = Color3.fromRGB(255, 255, 255)
     label.Font = Enum.Font.GothamBold
-    label.TextSize = 12
+    label.TextSize = 11
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.BackgroundTransparency = 1
     label.Parent = container
@@ -237,27 +253,23 @@ local function createFeatureHorizontal(titleText, defaultVal, onInputChanged, on
     createSwitch(container, onToggleChanged)
 end
 
--- ============================================
--- SETUP FITUR
--- ============================================
-
--- 1. WalkSpeed
-createFeatureHorizontal("WalkSpeed", OriginalWalkSpeed, function(val)
+-- FITUR 1: WalkSpeed
+createFeatureHorizontal("WalkSpeed", 32, function(val)
     local num = tonumber(val)
     if num then _G.WalkSpeedVal = num end
 end, function(state)
     _G.WalkSpeedToggle = state
 end)
 
--- 2. Jump Height
-createFeatureHorizontal("JumpHeight", OriginalJumpPower, function(val)
+-- FITUR 2: JumpHeight
+createFeatureHorizontal("JumpHeight", 100, function(val)
     local num = tonumber(val)
     if num then _G.JumpPowerVal = num end
 end, function(state)
     _G.JumpPowerToggle = state
 end)
 
--- 3. Fly Feature
+-- FITUR 3: Fly
 createFeatureHorizontal("Fly (Terbang)", 50, function(val)
     local num = tonumber(val)
     if num then _G.FlySpeed = num end
@@ -265,9 +277,9 @@ end, function(state)
     _G.FlyToggle = state
 end)
 
--- 4. Infinite Jump
+-- FITUR 4: Infinite Jump
 local infContainer = Instance.new("Frame")
-infContainer.Size = UDim2.new(1, 0, 0, 40)
+infContainer.Size = UDim2.new(1, 0, 0, 38)
 infContainer.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
 infContainer.BackgroundTransparency = 0.5
 infContainer.Parent = Content
@@ -279,7 +291,7 @@ infLabel.Position = UDim2.new(0, 10, 0, 0)
 infLabel.Text = "Infinite Jump"
 infLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 infLabel.Font = Enum.Font.GothamBold
-infLabel.TextSize = 12
+infLabel.TextSize = 11
 infLabel.TextXAlignment = Enum.TextXAlignment.Left
 infLabel.BackgroundTransparency = 1
 infLabel.Parent = infContainer
@@ -288,17 +300,17 @@ createSwitch(infContainer, function(state)
     _G.InfJump = state
 end)
 
--- 5. Teleport
+-- FITUR 5: Teleport
 local tpContainer = Instance.new("Frame")
-tpContainer.Size = UDim2.new(1, 0, 0, 40)
+tpContainer.Size = UDim2.new(1, 0, 0, 38)
 tpContainer.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
 tpContainer.BackgroundTransparency = 0.5
 tpContainer.Parent = Content
 Instance.new("UICorner", tpContainer).CornerRadius = UDim.new(0, 6)
 
 local setBtn = Instance.new("TextButton")
-setBtn.Size = UDim2.new(0.47, 0, 0, 26)
-setBtn.Position = UDim2.new(0, 8, 0.5, -13)
+setBtn.Size = UDim2.new(0, 180, 0, 24)
+setBtn.Position = UDim2.new(0, 8, 0.5, -12)
 setBtn.BackgroundColor3 = Color3.fromRGB(35, 15, 15)
 setBtn.Text = "Set Point"
 setBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -308,8 +320,8 @@ setBtn.Parent = tpContainer
 Instance.new("UICorner", setBtn).CornerRadius = UDim.new(0, 4)
 
 local tpBtn = Instance.new("TextButton")
-tpBtn.Size = UDim2.new(0.47, 0, 0, 26)
-tpBtn.Position = UDim2.new(0.5, 4, 0.5, -13)
+tpBtn.Size = UDim2.new(0, 180, 0, 24)
+tpBtn.Position = UDim2.new(0, 200, 0.5, -12)
 tpBtn.BackgroundColor3 = Color3.fromRGB(50, 20, 20)
 tpBtn.Text = "TP to Point"
 tpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -337,16 +349,13 @@ tpBtn.MouseButton1Click:Connect(function()
             hrp.CFrame = _G.SavedCFrame
         end
     else
-        tpBtn.Text = "No Point Saved!"
+        tpBtn.Text = "No Point!"
         task.wait(1)
         tpBtn.Text = "TP to Point"
     end
 end)
 
--- ============================================
--- MINIMIZE ANIMATION & CLOSE LOGIC
--- ============================================
-
+-- MINIMIZE & CLOSE SYSTEM
 local isMinimized = false
 local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 
@@ -356,11 +365,11 @@ MinBtn.MouseButton1Click:Connect(function()
     if isMinimized then
         MinBtn.Text = "+"
         Content.Visible = false
-        TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 180, 0, 35)}):Play()
+        TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 170, 0, 35)}):Play()
         TweenService:Create(FrameCorner, tweenInfo, {CornerRadius = UDim.new(1, 0)}):Play()
     else
         MinBtn.Text = "-"
-        local tween = TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 480, 0, 260)})
+        local tween = TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 460, 0, 250)})
         TweenService:Create(FrameCorner, tweenInfo, {CornerRadius = UDim.new(0, 10)}):Play()
         tween:Play()
         tween.Completed:Connect(function()
@@ -371,24 +380,17 @@ MinBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Close Logika
-CloseBtn.MouseButton1Click:Connect(function()
-    ConfirmFrame.Visible = true
-end)
-
-NoBtn.MouseButton1Click:Connect(function()
-    ConfirmFrame.Visible = false
-end)
-
+CloseBtn.MouseButton1Click:Connect(function() ConfirmFrame.Visible = true end)
+NoBtn.MouseButton1Click:Connect(function() ConfirmFrame.Visible = false end)
 YesBtn.MouseButton1Click:Connect(function()
     _G.WalkSpeedToggle = false
     _G.JumpPowerToggle = false
-    _G.InfJump = false
     _G.FlyToggle = false
+    _G.InfJump = false
     ScreenGui:Destroy()
 end)
 
--- Infinite Jump Listener
+-- INFINITE JUMP
 UserInputService.JumpRequest:Connect(function()
     if _G.InfJump then
         local char = LocalPlayer.Character
@@ -399,50 +401,52 @@ UserInputService.JumpRequest:Connect(function()
     end
 end)
 
--- FLY SYSTEM LOGIC
-local bodyVelocity, bodyGyro
+-- FLY MECHANIC FIXED (WORK IN PC & MOBILE)
+local bv, bg
 RunService.RenderStepped:Connect(function()
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    
-    if _G.FlyToggle and hrp then
-        if not bodyVelocity then
-            bodyVelocity = Instance.new("BodyVelocity")
-            bodyVelocity.MaxForce = Vector3.new(1e9, 1e9, 1e9)
-            bodyVelocity.Parent = hrp
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
 
-            bodyGyro = Instance.new("BodyGyro")
-            bodyGyro.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
-            bodyGyro.P = 10000
-            bodyGyro.Parent = hrp
+    if _G.FlyToggle and hrp and hum then
+        if not bv then
+            bv = Instance.new("BodyVelocity")
+            bv.MaxForce = Vector3.new(1e6, 1e6, 1e6)
+            bv.Velocity = Vector3.zero
+            bv.Parent = hrp
+
+            bg = Instance.new("BodyGyro")
+            bg.MaxTorque = Vector3.new(1e6, 1e6, 1e6)
+            bg.P = 9000
+            bg.CFrame = hrp.CFrame
+            bg.Parent = hrp
         end
-        
-        local camera = workspace.CurrentCamera
-        bodyGyro.CFrame = camera.CFrame
-        
-        local moveDir = Vector3.zero
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + camera.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - camera.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - camera.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + camera.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0, 1, 0) end
-        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0, 1, 0) end
 
-        bodyVelocity.Velocity = moveDir * _G.FlySpeed
+        hum.PlatformStand = true
+        local cam = workspace.CurrentCamera
+        local moveDir = hum.MoveDirection
+
+        if moveDir.Magnitude > 0 then
+            bv.Velocity = cam.CFrame:VectorToWorldSpace(cam.CFrame:VectorToObjectSpace(moveDir)) * _G.FlySpeed
+        else
+            bv.Velocity = Vector3.zero
+        end
+
+        bg.CFrame = cam.CFrame
     else
-        if bodyVelocity then bodyVelocity:Destroy() bodyVelocity = nil end
-        if bodyGyro then bodyGyro:Destroy() bodyGyro = nil end
+        if bv then bv:Destroy() bv = nil end
+        if bg then bg:Destroy() bg = nil end
+        if hum then hum.PlatformStand = false end
     end
 end)
 
--- Loop Movement Manager
+-- MOVEMENT LOOP (WALKSPEED & JUMP POWER)
 task.spawn(function()
     while true do
         pcall(function()
             local char = LocalPlayer.Character
             local hum = char and char:FindFirstChildOfClass("Humanoid")
             if hum then
-                -- Return Original Speed/Jump when OFF
                 if _G.WalkSpeedToggle then
                     hum.WalkSpeed = _G.WalkSpeedVal
                 else
