@@ -1,9 +1,10 @@
 -- ============================================
--- EXZET HUB - ONTOP (RED & BLACK EDITION)
+-- EXZET HUB - ONTOP (SMOOTH TWEEN & TELEPORT)
 -- ============================================
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 
 -- State Variables
@@ -14,30 +15,33 @@ _G.JumpPowerToggle = false
 _G.JumpPowerVal = 50
 
 _G.InfJump = false
+_G.SavedCFrame = nil
 
 -- Clean Old UI
 local ParentGui = LocalPlayer:WaitForChild("PlayerGui")
-if ParentGui:FindFirstChild("ExzetOntopRed") then
-    ParentGui.ExzetOntopRed:Destroy()
+if ParentGui:FindFirstChild("ExzetOntopSmooth") then
+    ParentGui.ExzetOntopSmooth:Destroy()
 end
 
 -- 1. MAIN SCREEN GUI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ExzetOntopRed"
+ScreenGui.Name = "ExzetOntopSmooth"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = ParentGui
 
 -- 2. MAIN FRAME (Merah-Hitam Transparan)
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 300, 0, 330)
-MainFrame.Position = UDim2.new(0.5, -150, 0.35, -165)
+MainFrame.Size = UDim2.new(0, 300, 0, 400)
+MainFrame.Position = UDim2.new(0.5, -150, 0.35, -200)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 5, 5)
 MainFrame.BackgroundTransparency = 0.25
 MainFrame.Active = true
 MainFrame.Draggable = true
+MainFrame.ClipsDescendants = true
 MainFrame.Parent = ScreenGui
 
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
+local FrameCorner = Instance.new("UICorner", MainFrame)
+FrameCorner.CornerRadius = UDim.new(0, 12)
 
 local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Color = Color3.fromRGB(220, 30, 30)
@@ -46,7 +50,7 @@ MainStroke.Transparency = 0.3
 
 -- 3. HEADER BAR
 local Header = Instance.new("Frame")
-Header.Size = UDim2.new(1, 0, 0, 35)
+Header.Size = UDim2.new(1, 0, 0, 40)
 Header.BackgroundTransparency = 1
 Header.Parent = MainFrame
 
@@ -63,8 +67,8 @@ Title.Parent = Header
 
 -- MINIMIZE BUTTON (-)
 local MinBtn = Instance.new("TextButton")
-MinBtn.Size = UDim2.new(0, 25, 0, 25)
-MinBtn.Position = UDim2.new(1, -60, 0, 5)
+MinBtn.Size = UDim2.new(0, 26, 0, 26)
+MinBtn.Position = UDim2.new(1, -62, 0, 7)
 MinBtn.Text = "-"
 MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 MinBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
@@ -76,10 +80,10 @@ Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 6)
 
 -- CLOSE BUTTON (X)
 local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(0, 25, 0, 25)
-CloseBtn.Position = UDim2.new(1, -30, 0, 5)
+CloseBtn.Size = UDim2.new(0, 26, 0, 26)
+CloseBtn.Position = UDim2.new(1, -32, 0, 7)
 CloseBtn.Text = "X"
-CloseBtn.TextColor3 = Color3.fromRGB(255, 80, 80)
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
 CloseBtn.BackgroundTransparency = 0.3
 CloseBtn.Font = Enum.Font.GothamBold
@@ -87,27 +91,7 @@ CloseBtn.TextSize = 13
 CloseBtn.Parent = Header
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
 
--- 4. MINIMIZE BAR (Bentuk Panjang Kapsul Bulat)
-local MiniBar = Instance.new("TextButton")
-MiniBar.Size = UDim2.new(0, 160, 0, 32)
-MiniBar.Position = UDim2.new(0.1, 0, 0.2, 0)
-MiniBar.BackgroundColor3 = Color3.fromRGB(15, 5, 5)
-MiniBar.BackgroundTransparency = 0.2
-MiniBar.Text = "Exzet Hub - Ontop"
-MiniBar.TextColor3 = Color3.fromRGB(255, 60, 60)
-MiniBar.Font = Enum.Font.GothamBold
-MiniBar.TextSize = 12
-MiniBar.Visible = false
-MiniBar.Active = true
-MiniBar.Draggable = true
-MiniBar.Parent = ScreenGui
-
-Instance.new("UICorner", MiniBar).CornerRadius = UDim.new(1, 0) -- Halus / Bulat Kapsul
-local MiniStroke = Instance.new("UIStroke", MiniBar)
-MiniStroke.Color = Color3.fromRGB(220, 30, 30)
-MiniStroke.Thickness = 1.5
-
--- 5. CONFIRMATION CLOSE POPUP
+-- 4. CONFIRMATION CLOSE POPUP
 local ConfirmFrame = Instance.new("Frame")
 ConfirmFrame.Size = UDim2.new(0, 200, 0, 100)
 ConfirmFrame.Position = UDim2.new(0.5, -100, 0.5, -50)
@@ -152,31 +136,31 @@ Instance.new("UICorner", NoBtn).CornerRadius = UDim.new(0, 6)
 
 -- CONTAINER FITUR
 local Content = Instance.new("ScrollingFrame")
-Content.Size = UDim2.new(1, -20, 1, -45)
-Content.Position = UDim2.new(0, 10, 0, 40)
+Content.Size = UDim2.new(1, -20, 1, -50)
+Content.Position = UDim2.new(0, 10, 0, 45)
 Content.BackgroundTransparency = 1
-Content.CanvasSize = UDim2.new(0, 0, 0, 270)
+Content.CanvasSize = UDim2.new(0, 0, 0, 330)
 Content.ScrollBarThickness = 3
 Content.ScrollBarImageColor3 = Color3.fromRGB(220, 30, 30)
 Content.Parent = MainFrame
 
 local UIList = Instance.new("UIListLayout", Content)
-UIList.Padding = UDim.new(0, 12)
+UIList.Padding = UDim.new(0, 10)
 
 -- HELPER: BIKIN SEKSI FITUR DENGAN INPUT & TOGGLE ON/OFF
 local function createFeatureSection(titleText, defaultVal, onInputChanged, onToggleChanged)
     local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, 0, 0, 70)
+    container.Size = UDim2.new(1, 0, 0, 68)
     container.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
     container.BackgroundTransparency = 0.5
     container.Parent = Content
     Instance.new("UICorner", container).CornerRadius = UDim.new(0, 6)
 
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -10, 0, 22)
+    label.Size = UDim2.new(1, -10, 0, 20)
     label.Position = UDim2.new(0, 8, 0, 5)
     label.Text = titleText
-    label.TextColor3 = Color3.fromRGB(255, 200, 200)
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
     label.Font = Enum.Font.GothamBold
     label.TextSize = 12
     label.TextXAlignment = Enum.TextXAlignment.Left
@@ -185,7 +169,7 @@ local function createFeatureSection(titleText, defaultVal, onInputChanged, onTog
 
     local box = Instance.new("TextBox")
     box.Size = UDim2.new(0.55, -10, 0, 30)
-    box.Position = UDim2.new(0, 8, 0, 32)
+    box.Position = UDim2.new(0, 8, 0, 30)
     box.BackgroundColor3 = Color3.fromRGB(35, 15, 15)
     box.Text = tostring(defaultVal)
     box.PlaceholderText = "Angka..."
@@ -197,10 +181,10 @@ local function createFeatureSection(titleText, defaultVal, onInputChanged, onTog
 
     local toggle = Instance.new("TextButton")
     toggle.Size = UDim2.new(0.4, 0, 0, 30)
-    toggle.Position = UDim2.new(0.57, 0, 0, 32)
+    toggle.Position = UDim2.new(0.57, 0, 0, 30)
     toggle.BackgroundColor3 = Color3.fromRGB(50, 20, 20)
     toggle.Text = "OFF"
-    toggle.TextColor3 = Color3.fromRGB(200, 200, 200)
+    toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
     toggle.Font = Enum.Font.GothamBold
     toggle.TextSize = 12
     toggle.Parent = container
@@ -215,7 +199,6 @@ local function createFeatureSection(titleText, defaultVal, onInputChanged, onTog
         state = not state
         toggle.Text = state and "ON" or "OFF"
         toggle.BackgroundColor3 = state and Color3.fromRGB(180, 30, 30) or Color3.fromRGB(50, 20, 20)
-        toggle.TextColor3 = state and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200)
         onToggleChanged(state)
     end)
 end
@@ -224,7 +207,7 @@ end
 -- SETUP FITUR-FITUR
 -- ============================================
 
--- 1. WalkSpeed (Kecepatan Jalan)
+-- 1. WalkSpeed
 createFeatureSection("WalkSpeed (Kecepatan Jalan)", 16, function(val)
     local num = tonumber(val)
     if num then _G.WalkSpeedVal = num end
@@ -232,7 +215,7 @@ end, function(state)
     _G.WalkSpeedToggle = state
 end)
 
--- 2. Jump Height (Tinggi Lompatan)
+-- 2. Jump Height
 createFeatureSection("Jump Height (Tinggi Lompatan)", 50, function(val)
     local num = tonumber(val)
     if num then _G.JumpPowerVal = num end
@@ -240,7 +223,7 @@ end, function(state)
     _G.JumpPowerToggle = state
 end)
 
--- 3. Infinite Jump (Lompat Tanpa Batas)
+-- 3. Infinite Jump
 local infContainer = Instance.new("Frame")
 infContainer.Size = UDim2.new(1, 0, 0, 45)
 infContainer.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
@@ -252,7 +235,7 @@ local infLabel = Instance.new("TextLabel")
 infLabel.Size = UDim2.new(0.55, -10, 1, 0)
 infLabel.Position = UDim2.new(0, 8, 0, 0)
 infLabel.Text = "Infinite Jump"
-infLabel.TextColor3 = Color3.fromRGB(255, 200, 200)
+infLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 infLabel.Font = Enum.Font.GothamBold
 infLabel.TextSize = 12
 infLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -264,7 +247,7 @@ infToggle.Size = UDim2.new(0.4, 0, 0, 30)
 infToggle.Position = UDim2.new(0.57, 0, 0, 7.5)
 infToggle.BackgroundColor3 = Color3.fromRGB(50, 20, 20)
 infToggle.Text = "OFF"
-infToggle.TextColor3 = Color3.fromRGB(200, 200, 200)
+infToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
 infToggle.Font = Enum.Font.GothamBold
 infToggle.TextSize = 12
 infToggle.Parent = infContainer
@@ -274,22 +257,100 @@ infToggle.MouseButton1Click:Connect(function()
     _G.InfJump = not _G.InfJump
     infToggle.Text = _G.InfJump and "ON" or "OFF"
     infToggle.BackgroundColor3 = _G.InfJump and Color3.fromRGB(180, 30, 30) or Color3.fromRGB(50, 20, 20)
-    infToggle.TextColor3 = _G.InfJump and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200)
+end)
+
+-- 4. Fitur Teleport (Set Point & TP)
+local tpContainer = Instance.new("Frame")
+tpContainer.Size = UDim2.new(1, 0, 0, 75)
+tpContainer.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
+tpContainer.BackgroundTransparency = 0.5
+tpContainer.Parent = Content
+Instance.new("UICorner", tpContainer).CornerRadius = UDim.new(0, 6)
+
+local tpLabel = Instance.new("TextLabel")
+tpLabel.Size = UDim2.new(1, -10, 0, 20)
+tpLabel.Position = UDim2.new(0, 8, 0, 5)
+tpLabel.Text = "Teleport Position"
+tpLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+tpLabel.Font = Enum.Font.GothamBold
+tpLabel.TextSize = 12
+tpLabel.TextXAlignment = Enum.TextXAlignment.Left
+tpLabel.BackgroundTransparency = 1
+tpLabel.Parent = tpContainer
+
+local setBtn = Instance.new("TextButton")
+setBtn.Size = UDim2.new(0.47, -5, 0, 32)
+setBtn.Position = UDim2.new(0, 8, 0, 30)
+setBtn.BackgroundColor3 = Color3.fromRGB(35, 15, 15)
+setBtn.Text = "Set Point"
+setBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+setBtn.Font = Enum.Font.GothamBold
+setBtn.TextSize = 11
+setBtn.Parent = tpContainer
+Instance.new("UICorner", setBtn).CornerRadius = UDim.new(0, 4)
+
+local tpBtn = Instance.new("TextButton")
+tpBtn.Size = UDim2.new(0.47, -5, 0, 32)
+tpBtn.Position = UDim2.new(0.5, 3, 0, 30)
+tpBtn.BackgroundColor3 = Color3.fromRGB(50, 20, 20)
+tpBtn.Text = "TP to Point"
+tpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+tpBtn.Font = Enum.Font.GothamBold
+tpBtn.TextSize = 11
+tpBtn.Parent = tpContainer
+Instance.new("UICorner", tpBtn).CornerRadius = UDim.new(0, 4)
+
+setBtn.MouseButton1Click:Connect(function()
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        _G.SavedCFrame = hrp.CFrame
+        setBtn.Text = "Point Saved!"
+        task.wait(1)
+        setBtn.Text = "Set Point"
+    end
+end)
+
+tpBtn.MouseButton1Click:Connect(function()
+    if _G.SavedCFrame then
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hrp.CFrame = _G.SavedCFrame
+        end
+    else
+        tpBtn.Text = "No Point Saved!"
+        task.wait(1)
+        tpBtn.Text = "TP to Point"
+    end
 end)
 
 -- ============================================
--- LOGIKA EVENT & SYSTEM
+-- SMOOTH ANIMATION TWEEN LOGIC
 -- ============================================
 
--- Minimize Logika
+local isMinimized = false
+local tweenInfo = TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+
 MinBtn.MouseButton1Click:Connect(function()
-    MainFrame.Visible = false
-    MiniBar.Visible = true
-end)
-
-MiniBar.MouseButton1Click:Connect(function()
-    MainFrame.Visible = true
-    MiniBar.Visible = false
+    isMinimized = not isMinimized
+    
+    if isMinimized then
+        MinBtn.Text = "+"
+        Content.Visible = false
+        TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 180, 0, 40)}):Play()
+        TweenService:Create(FrameCorner, tweenInfo, {CornerRadius = UDim.new(1, 0)}):Play()
+    else
+        MinBtn.Text = "-"
+        local tween = TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 300, 0, 400)})
+        TweenService:Create(FrameCorner, tweenInfo, {CornerRadius = UDim.new(0, 12)}):Play()
+        tween:Play()
+        tween.Completed:Connect(function()
+            if not isMinimized then
+                Content.Visible = true
+            end
+        end)
+    end
 end)
 
 -- Close Logika
@@ -326,18 +387,16 @@ task.spawn(function()
             local char = LocalPlayer.Character
             local hum = char and char:FindFirstChildOfClass("Humanoid")
             if hum then
-                -- WalkSpeed Manager
                 if _G.WalkSpeedToggle then
                     hum.WalkSpeed = _G.WalkSpeedVal
                 else
-                    hum.WalkSpeed = 16 -- Kembalikan ke Normal
+                    hum.WalkSpeed = 16
                 end
 
-                -- Jump Height Manager
                 if _G.JumpPowerToggle then
                     hum.JumpPower = _G.JumpPowerVal
                 else
-                    hum.JumpPower = 50 -- Kembalikan ke Normal
+                    hum.JumpPower = 50
                 end
             end
         end)
