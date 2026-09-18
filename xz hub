@@ -1,0 +1,79 @@
+-- ============================================
+-- ORION UI HUB - AUTO PICKUP EGG
+-- ============================================
+
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+local Window = OrionLib:MakeWindow({Name = "Egg Auto Pickup Hub", HidePremium = true, SaveConfig = false, ConfigFolder = "EggPickupConfig"})
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RemoteEgg = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Game"):WaitForChild("EggPickup")[cite: 1]
+
+_G.AutoPickup = false
+_G.TargetRarity = "Ethereal"
+
+-- FUNGSI SCAN UUID TELUR
+local function extractEggUUID(obj)
+    -- 1. Cek dari nama objek langsung
+    if type(obj.Name) == "string" and string.len(obj.Name) == 36 and string.find(obj.Name, "-") then
+        return obj.Name
+    end
+    
+    -- 2. Cek dari seluruh atribut objek
+    local attributes = obj:GetAttributes()
+    for attrName, attrVal in pairs(attributes) do
+        if type(attrVal) == "string" and string.len(attrVal) == 36 and string.find(attrVal, "-") then
+            return attrVal
+        end
+    end
+    
+    return nil
+end
+
+-- TAB UTAMA
+local MainTab = OrionLib:MakeTab({
+	Name = "Main",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+})
+
+MainTab:AddToggle({
+	Name = "Auto Pickup Egg",
+	Default = false,
+	Callback = function(Value)
+		_G.AutoPickup = Value
+        if Value then
+            task.spawn(function()
+                while _G.AutoPickup do
+                    for _, obj in pairs(workspace:GetDescendants()) do
+                        if not _G.AutoPickup then break end
+                        
+                        -- Cek atribut A_OrigRarity
+                        local origRarity = obj:GetAttribute("A_OrigRarity") or obj.Name[cite: 3, 4]
+                        local cleanRarity = string.gsub(tostring(origRarity), "-", "")
+                        
+                        if cleanRarity:lower() == tostring(_G.TargetRarity):lower() then
+                            local eggUUID = extractEggUUID(obj)
+                            
+                            if eggUUID then
+                                RemoteEgg:FireServer(eggUUID)[cite: 1]
+                                task.wait(0.05)
+                            end
+                        end
+                    end
+                    task.wait(0.3)
+                end
+            end)
+        end
+	end    
+})
+
+MainTab:AddDropdown({
+	Name = "Select Rarity",
+	Default = "Ethereal",
+	Options = {"Common", "Rare", "Epic", "Legendary", "Divine", "Ethereal"},
+	Callback = function(Value)
+		_G.TargetRarity = Value
+	end
+})
+
+OrionLib:Init()
