@@ -1,5 +1,5 @@
 -- ============================================
--- EXZET HUB - ONTOP (SMOOTH TWEEN & TELEPORT)
+-- EXZET HUB - ONTOP (CLEAN HORIZONTAL & SWITCH)
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -19,20 +19,20 @@ _G.SavedCFrame = nil
 
 -- Clean Old UI
 local ParentGui = LocalPlayer:WaitForChild("PlayerGui")
-if ParentGui:FindFirstChild("ExzetOntopSmooth") then
-    ParentGui.ExzetOntopSmooth:Destroy()
+if ParentGui:FindFirstChild("ExzetCleanHub") then
+    ParentGui.ExzetCleanHub:Destroy()
 end
 
 -- 1. MAIN SCREEN GUI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ExzetOntopSmooth"
+ScreenGui.Name = "ExzetCleanHub"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = ParentGui
 
 -- 2. MAIN FRAME (Merah-Hitam Transparan)
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 300, 0, 400)
-MainFrame.Position = UDim2.new(0.5, -150, 0.35, -200)
+MainFrame.Size = UDim2.new(0, 260, 0, 290)
+MainFrame.Position = UDim2.new(0.5, -130, 0.35, -145)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 5, 5)
 MainFrame.BackgroundTransparency = 0.25
 MainFrame.Active = true
@@ -41,7 +41,7 @@ MainFrame.ClipsDescendants = true
 MainFrame.Parent = ScreenGui
 
 local FrameCorner = Instance.new("UICorner", MainFrame)
-FrameCorner.CornerRadius = UDim.new(0, 12)
+FrameCorner.CornerRadius = UDim.new(0, 10)
 
 local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Color = Color3.fromRGB(220, 30, 30)
@@ -50,51 +50,51 @@ MainStroke.Transparency = 0.3
 
 -- 3. HEADER BAR
 local Header = Instance.new("Frame")
-Header.Size = UDim2.new(1, 0, 0, 40)
+Header.Size = UDim2.new(1, 0, 0, 35)
 Header.BackgroundTransparency = 1
 Header.Parent = MainFrame
 
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -70, 1, 0)
+Title.Size = UDim2.new(1, -65, 1, 0)
 Title.Position = UDim2.new(0, 12, 0, 0)
 Title.Text = "Exzet Hub - Ontop"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 14
+Title.TextSize = 13
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.BackgroundTransparency = 1
 Title.Parent = Header
 
 -- MINIMIZE BUTTON (-)
 local MinBtn = Instance.new("TextButton")
-MinBtn.Size = UDim2.new(0, 26, 0, 26)
-MinBtn.Position = UDim2.new(1, -62, 0, 7)
+MinBtn.Size = UDim2.new(0, 22, 0, 22)
+MinBtn.Position = UDim2.new(1, -54, 0, 65/10)
 MinBtn.Text = "-"
 MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 MinBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
 MinBtn.BackgroundTransparency = 0.3
 MinBtn.Font = Enum.Font.GothamBold
-MinBtn.TextSize = 16
+MinBtn.TextSize = 14
 MinBtn.Parent = Header
-Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 5)
 
 -- CLOSE BUTTON (X)
 local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(0, 26, 0, 26)
-CloseBtn.Position = UDim2.new(1, -32, 0, 7)
+CloseBtn.Size = UDim2.new(0, 22, 0, 22)
+CloseBtn.Position = UDim2.new(1, -27, 0, 65/10)
 CloseBtn.Text = "X"
 CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
 CloseBtn.BackgroundTransparency = 0.3
 CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.TextSize = 13
+CloseBtn.TextSize = 12
 CloseBtn.Parent = Header
-Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 5)
 
 -- 4. CONFIRMATION CLOSE POPUP
 local ConfirmFrame = Instance.new("Frame")
-ConfirmFrame.Size = UDim2.new(0, 200, 0, 100)
-ConfirmFrame.Position = UDim2.new(0.5, -100, 0.5, -50)
+ConfirmFrame.Size = UDim2.new(0, 200, 0, 95)
+ConfirmFrame.Position = UDim2.new(0.5, -100, 0.5, -47)
 ConfirmFrame.BackgroundColor3 = Color3.fromRGB(15, 5, 5)
 ConfirmFrame.BackgroundTransparency = 0.1
 ConfirmFrame.Visible = false
@@ -106,109 +106,129 @@ ConfirmStroke.Color = Color3.fromRGB(220, 30, 30)
 
 local ConfirmText = Instance.new("TextLabel")
 ConfirmText.Size = UDim2.new(1, -20, 0, 30)
-ConfirmText.Position = UDim2.new(0, 10, 0, 15)
+ConfirmText.Position = UDim2.new(0, 10, 0, 12)
 ConfirmText.Text = "confirm to close script"
 ConfirmText.TextColor3 = Color3.fromRGB(255, 255, 255)
 ConfirmText.Font = Enum.Font.Gotham
-ConfirmText.TextSize = 13
+ConfirmText.TextSize = 12
 ConfirmText.BackgroundTransparency = 1
 ConfirmText.Parent = ConfirmFrame
 
 local YesBtn = Instance.new("TextButton")
-YesBtn.Size = UDim2.new(0, 75, 0, 28)
-YesBtn.Position = UDim2.new(0.12, 0, 0, 55)
+YesBtn.Size = UDim2.new(0, 75, 0, 26)
+YesBtn.Position = UDim2.new(0.12, 0, 0, 52)
 YesBtn.Text = "Yes"
 YesBtn.BackgroundColor3 = Color3.fromRGB(180, 30, 30)
 YesBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 YesBtn.Font = Enum.Font.GothamBold
 YesBtn.Parent = ConfirmFrame
-Instance.new("UICorner", YesBtn).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", YesBtn).CornerRadius = UDim.new(0, 5)
 
 local NoBtn = Instance.new("TextButton")
-NoBtn.Size = UDim2.new(0, 75, 0, 28)
-NoBtn.Position = UDim2.new(0.52, 0, 0, 55)
+NoBtn.Size = UDim2.new(0, 75, 0, 26)
+NoBtn.Position = UDim2.new(0.52, 0, 0, 52)
 NoBtn.Text = "No"
 NoBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
 NoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 NoBtn.Font = Enum.Font.GothamBold
 NoBtn.Parent = ConfirmFrame
-Instance.new("UICorner", NoBtn).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", NoBtn).CornerRadius = UDim.new(0, 5)
 
 -- CONTAINER FITUR
 local Content = Instance.new("ScrollingFrame")
-Content.Size = UDim2.new(1, -20, 1, -50)
-Content.Position = UDim2.new(0, 10, 0, 45)
+Content.Size = UDim2.new(1, -16, 1, -40)
+Content.Position = UDim2.new(0, 8, 0, 35)
 Content.BackgroundTransparency = 1
-Content.CanvasSize = UDim2.new(0, 0, 0, 330)
-Content.ScrollBarThickness = 3
+Content.CanvasSize = UDim2.new(0, 0, 0, 230)
+Content.ScrollBarThickness = 2
 Content.ScrollBarImageColor3 = Color3.fromRGB(220, 30, 30)
 Content.Parent = MainFrame
 
 local UIList = Instance.new("UIListLayout", Content)
-UIList.Padding = UDim.new(0, 10)
+UIList.Padding = UDim.new(0, 8)
 
--- HELPER: BIKIN SEKSI FITUR DENGAN INPUT & TOGGLE ON/OFF
-local function createFeatureSection(titleText, defaultVal, onInputChanged, onToggleChanged)
+-- HELPER: TOGGLE SWITCH (HIJAU / ABU-ABU)
+local function createSwitch(parent, onToggle)
+    local switchBg = Instance.new("Frame")
+    switchBg.Size = UDim2.new(0, 40, 0, 20)
+    switchBg.Position = UDim2.new(1, -45, 0.5, -10)
+    switchBg.BackgroundColor3 = Color3.fromRGB(80, 80, 85) -- Off: Abu-abu
+    switchBg.Parent = parent
+    Instance.new("UICorner", switchBg).CornerRadius = UDim.new(1, 0)
+
+    local circle = Instance.new("Frame")
+    circle.Size = UDim2.new(0, 16, 0, 16)
+    circle.Position = UDim2.new(0, 2, 0.5, -8)
+    circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    circle.Parent = switchBg
+    Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
+
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 1, 0)
+    btn.BackgroundTransparency = 1
+    btn.Text = ""
+    btn.Parent = switchBg
+
+    local state = false
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        
+        if state then
+            TweenService:Create(switchBg, tweenInfo, {BackgroundColor3 = Color3.fromRGB(50, 200, 50)}):Play() -- On: Hijau
+            TweenService:Create(circle, tweenInfo, {Position = UDim2.new(1, -18, 0.5, -8)}):Play()
+        else
+            TweenService:Create(switchBg, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 85)}):Play() -- Off: Abu-abu
+            TweenService:Create(circle, tweenInfo, {Position = UDim2.new(0, 2, 0.5, -8)}):Play()
+        end
+        onToggle(state)
+    end)
+end
+
+-- HELPER: BIKIN SEKSI FITUR HORIZONTAL
+local function createFeatureHorizontal(titleText, defaultVal, onInputChanged, onToggleChanged)
     local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, 0, 0, 68)
+    container.Size = UDim2.new(1, 0, 0, 42)
     container.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
     container.BackgroundTransparency = 0.5
     container.Parent = Content
     Instance.new("UICorner", container).CornerRadius = UDim.new(0, 6)
 
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -10, 0, 20)
-    label.Position = UDim2.new(0, 8, 0, 5)
+    label.Size = UDim2.new(0.42, 0, 1, 0)
+    label.Position = UDim2.new(0, 8, 0, 0)
     label.Text = titleText
     label.TextColor3 = Color3.fromRGB(255, 255, 255)
     label.Font = Enum.Font.GothamBold
-    label.TextSize = 12
+    label.TextSize = 11
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.BackgroundTransparency = 1
     label.Parent = container
 
     local box = Instance.new("TextBox")
-    box.Size = UDim2.new(0.55, -10, 0, 30)
-    box.Position = UDim2.new(0, 8, 0, 30)
+    box.Size = UDim2.new(0.22, 0, 0, 24)
+    box.Position = UDim2.new(0.43, 0, 0.5, -12)
     box.BackgroundColor3 = Color3.fromRGB(35, 15, 15)
     box.Text = tostring(defaultVal)
-    box.PlaceholderText = "Angka..."
     box.TextColor3 = Color3.fromRGB(255, 255, 255)
     box.Font = Enum.Font.Gotham
-    box.TextSize = 12
+    box.TextSize = 11
     box.Parent = container
     Instance.new("UICorner", box).CornerRadius = UDim.new(0, 4)
-
-    local toggle = Instance.new("TextButton")
-    toggle.Size = UDim2.new(0.4, 0, 0, 30)
-    toggle.Position = UDim2.new(0.57, 0, 0, 30)
-    toggle.BackgroundColor3 = Color3.fromRGB(50, 20, 20)
-    toggle.Text = "OFF"
-    toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    toggle.Font = Enum.Font.GothamBold
-    toggle.TextSize = 12
-    toggle.Parent = container
-    Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 4)
 
     box.FocusLost:Connect(function()
         onInputChanged(box.Text)
     end)
 
-    local state = false
-    toggle.MouseButton1Click:Connect(function()
-        state = not state
-        toggle.Text = state and "ON" or "OFF"
-        toggle.BackgroundColor3 = state and Color3.fromRGB(180, 30, 30) or Color3.fromRGB(50, 20, 20)
-        onToggleChanged(state)
-    end)
+    createSwitch(container, onToggleChanged)
 end
 
 -- ============================================
--- SETUP FITUR-FITUR
+-- SETUP FITUR
 -- ============================================
 
 -- 1. WalkSpeed
-createFeatureSection("WalkSpeed (Kecepatan Jalan)", 16, function(val)
+createFeatureHorizontal("WalkSpeed", 16, function(val)
     local num = tonumber(val)
     if num then _G.WalkSpeedVal = num end
 end, function(state)
@@ -216,7 +236,7 @@ end, function(state)
 end)
 
 -- 2. Jump Height
-createFeatureSection("Jump Height (Tinggi Lompatan)", 50, function(val)
+createFeatureHorizontal("JumpHeight", 50, function(val)
     local num = tonumber(val)
     if num then _G.JumpPowerVal = num end
 end, function(state)
@@ -225,78 +245,54 @@ end)
 
 -- 3. Infinite Jump
 local infContainer = Instance.new("Frame")
-infContainer.Size = UDim2.new(1, 0, 0, 45)
+infContainer.Size = UDim2.new(1, 0, 0, 42)
 infContainer.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
 infContainer.BackgroundTransparency = 0.5
 infContainer.Parent = Content
 Instance.new("UICorner", infContainer).CornerRadius = UDim.new(0, 6)
 
 local infLabel = Instance.new("TextLabel")
-infLabel.Size = UDim2.new(0.55, -10, 1, 0)
+infLabel.Size = UDim2.new(0.6, 0, 1, 0)
 infLabel.Position = UDim2.new(0, 8, 0, 0)
 infLabel.Text = "Infinite Jump"
 infLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 infLabel.Font = Enum.Font.GothamBold
-infLabel.TextSize = 12
+infLabel.TextSize = 11
 infLabel.TextXAlignment = Enum.TextXAlignment.Left
 infLabel.BackgroundTransparency = 1
 infLabel.Parent = infContainer
 
-local infToggle = Instance.new("TextButton")
-infToggle.Size = UDim2.new(0.4, 0, 0, 30)
-infToggle.Position = UDim2.new(0.57, 0, 0, 7.5)
-infToggle.BackgroundColor3 = Color3.fromRGB(50, 20, 20)
-infToggle.Text = "OFF"
-infToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-infToggle.Font = Enum.Font.GothamBold
-infToggle.TextSize = 12
-infToggle.Parent = infContainer
-Instance.new("UICorner", infToggle).CornerRadius = UDim.new(0, 4)
-
-infToggle.MouseButton1Click:Connect(function()
-    _G.InfJump = not _G.InfJump
-    infToggle.Text = _G.InfJump and "ON" or "OFF"
-    infToggle.BackgroundColor3 = _G.InfJump and Color3.fromRGB(180, 30, 30) or Color3.fromRGB(50, 20, 20)
+createSwitch(infContainer, function(state)
+    _G.InfJump = state
 end)
 
--- 4. Fitur Teleport (Set Point & TP)
+-- 4. Teleport
 local tpContainer = Instance.new("Frame")
-tpContainer.Size = UDim2.new(1, 0, 0, 75)
+tpContainer.Size = UDim2.new(1, 0, 0, 42)
 tpContainer.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
 tpContainer.BackgroundTransparency = 0.5
 tpContainer.Parent = Content
 Instance.new("UICorner", tpContainer).CornerRadius = UDim.new(0, 6)
 
-local tpLabel = Instance.new("TextLabel")
-tpLabel.Size = UDim2.new(1, -10, 0, 20)
-tpLabel.Position = UDim2.new(0, 8, 0, 5)
-tpLabel.Text = "Teleport Position"
-tpLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-tpLabel.Font = Enum.Font.GothamBold
-tpLabel.TextSize = 12
-tpLabel.TextXAlignment = Enum.TextXAlignment.Left
-tpLabel.BackgroundTransparency = 1
-tpLabel.Parent = tpContainer
-
 local setBtn = Instance.new("TextButton")
-setBtn.Size = UDim2.new(0.47, -5, 0, 32)
-setBtn.Position = UDim2.new(0, 8, 0, 30)
+setBtn.Size = UDim2.new(0.46, 0, 0, 26)
+setBtn.Position = UDim2.new(0, 6, 0.5, -13)
 setBtn.BackgroundColor3 = Color3.fromRGB(35, 15, 15)
 setBtn.Text = "Set Point"
 setBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 setBtn.Font = Enum.Font.GothamBold
-setBtn.TextSize = 11
+setBtn.TextSize = 10
 setBtn.Parent = tpContainer
 Instance.new("UICorner", setBtn).CornerRadius = UDim.new(0, 4)
 
 local tpBtn = Instance.new("TextButton")
-tpBtn.Size = UDim2.new(0.47, -5, 0, 32)
-tpBtn.Position = UDim2.new(0.5, 3, 0, 30)
+tpBtn.Size = UDim2.new(0.46, 0, 0, 26)
+tpBtn.Position = UDim2.new(0.5, 4, 0.5, -13)
 tpBtn.BackgroundColor3 = Color3.fromRGB(50, 20, 20)
 tpBtn.Text = "TP to Point"
 tpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 tpBtn.Font = Enum.Font.GothamBold
-tpBtn.TextSize = 11
+tpBtn.TextSize = 10
 tpBtn.Parent = tpContainer
 Instance.new("UICorner", tpBtn).CornerRadius = UDim.new(0, 4)
 
@@ -305,7 +301,7 @@ setBtn.MouseButton1Click:Connect(function()
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if hrp then
         _G.SavedCFrame = hrp.CFrame
-        setBtn.Text = "Point Saved!"
+        setBtn.Text = "Saved!"
         task.wait(1)
         setBtn.Text = "Set Point"
     end
@@ -319,18 +315,18 @@ tpBtn.MouseButton1Click:Connect(function()
             hrp.CFrame = _G.SavedCFrame
         end
     else
-        tpBtn.Text = "No Point Saved!"
+        tpBtn.Text = "No Point!"
         task.wait(1)
         tpBtn.Text = "TP to Point"
     end
 end)
 
 -- ============================================
--- SMOOTH ANIMATION TWEEN LOGIC
+-- MINIMIZE ANIMATION & CLOSE LOGIC
 -- ============================================
 
 local isMinimized = false
-local tweenInfo = TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 
 MinBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
@@ -338,12 +334,12 @@ MinBtn.MouseButton1Click:Connect(function()
     if isMinimized then
         MinBtn.Text = "+"
         Content.Visible = false
-        TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 180, 0, 40)}):Play()
+        TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 170, 0, 35)}):Play()
         TweenService:Create(FrameCorner, tweenInfo, {CornerRadius = UDim.new(1, 0)}):Play()
     else
         MinBtn.Text = "-"
-        local tween = TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 300, 0, 400)})
-        TweenService:Create(FrameCorner, tweenInfo, {CornerRadius = UDim.new(0, 12)}):Play()
+        local tween = TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 260, 0, 290)})
+        TweenService:Create(FrameCorner, tweenInfo, {CornerRadius = UDim.new(0, 10)}):Play()
         tween:Play()
         tween.Completed:Connect(function()
             if not isMinimized then
