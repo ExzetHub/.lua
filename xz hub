@@ -1,5 +1,5 @@
 -- ============================================
--- EXZET HUB - ONTOP (v2.5 RESTRUCTURED)
+-- EXZET HUB - ONTOP (v2.6 CLEAN DROPDOWNS)
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -66,7 +66,7 @@ Header.Parent = MainFrame
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -70, 1, 0)
 Title.Position = UDim2.new(0, 12, 0, 0)
-Title.Text = "Exzet Hub - Beta (v2.5)"
+Title.Text = "Exzet Hub - Beta Version 1"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 13
@@ -276,7 +276,7 @@ Instance.new("UICorner", playerGroup).CornerRadius = UDim.new(0, 6)
 local playerHeader = Instance.new("TextButton")
 playerHeader.Size = UDim2.new(1, 0, 0, 36)
 playerHeader.BackgroundTransparency = 1
-playerHeader.Text = "  Fitur : Player  ↓"
+playerHeader.Text = "  Player  [ + ]"
 playerHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
 playerHeader.Font = Enum.Font.GothamBold
 playerHeader.TextSize = 12
@@ -315,32 +315,32 @@ end)
 local isPlayerOpen = false
 playerHeader.MouseButton1Click:Connect(function()
     isPlayerOpen = not isPlayerOpen
-    playerHeader.Text = isPlayerOpen and "  Fitur : Player  ↑" or "  Fitur : Player  ↓"
+    playerHeader.Text = isPlayerOpen and "  Player  [ - ]" or "  Player  [ + ]"
     local targetHeight = isPlayerOpen and (38 + pList.AbsoluteContentSize.Y + 8) or 36
     TweenService:Create(playerGroup, TweenInfo.new(0.25), {Size = UDim2.new(1, 0, 0, targetHeight)}):Play()
 end)
 
--- 2. KATEGORI: GOD MODE
+-- 2. DROPDOWN GROUP: GOD MODE
 local godGroup = Instance.new("Frame")
-godGroup.Size = UDim2.new(1, 0, 0, 118)
+godGroup.Size = UDim2.new(1, 0, 0, 36)
 godGroup.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
+godGroup.ClipsDescendants = true
 godGroup.Parent = MainContent
 Instance.new("UICorner", godGroup).CornerRadius = UDim.new(0, 6)
 
-local godHeader = Instance.new("TextLabel")
-godHeader.Size = UDim2.new(1, 0, 0, 30)
-godHeader.Position = UDim2.new(0, 10, 0, 0)
-godHeader.Text = "Fitur : God Mode"
+local godHeader = Instance.new("TextButton")
+godHeader.Size = UDim2.new(1, 0, 0, 36)
+godHeader.BackgroundTransparency = 1
+godHeader.Text = "  God Mode  [ + ]"
 godHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
 godHeader.Font = Enum.Font.GothamBold
 godHeader.TextSize = 12
 godHeader.TextXAlignment = Enum.TextXAlignment.Left
-godHeader.BackgroundTransparency = 1
 godHeader.Parent = godGroup
 
 local godContainer = Instance.new("Frame")
-godContainer.Size = UDim2.new(1, -16, 0, 80)
-godContainer.Position = UDim2.new(0, 8, 0, 30)
+godContainer.Size = UDim2.new(1, -16, 0, 0)
+godContainer.Position = UDim2.new(0, 8, 0, 38)
 godContainer.BackgroundTransparency = 1
 godContainer.Parent = godGroup
 
@@ -355,6 +355,14 @@ createFeatureToggleOnly(godContainer, "Kebal Guard (Anti-Touch/Pukul)", false, f
     _G.GuardBypassToggle = state
 end)
 
+local isGodOpen = false
+godHeader.MouseButton1Click:Connect(function()
+    isGodOpen = not isGodOpen
+    godHeader.Text = isGodOpen and "  God Mode  [ - ]" or "  God Mode  [ + ]"
+    local targetHeight = isGodOpen and (38 + gList.AbsoluteContentSize.Y + 8) or 36
+    TweenService:Create(godGroup, TweenInfo.new(0.25), {Size = UDim2.new(1, 0, 0, targetHeight)}):Play()
+end)
+
 -- 3. KATEGORI: TELEPORT
 local tpGroup = Instance.new("Frame")
 tpGroup.Size = UDim2.new(1, 0, 0, 75)
@@ -365,7 +373,7 @@ Instance.new("UICorner", tpGroup).CornerRadius = UDim.new(0, 6)
 local tpHeader = Instance.new("TextLabel")
 tpHeader.Size = UDim2.new(1, 0, 0, 30)
 tpHeader.Position = UDim2.new(0, 10, 0, 0)
-tpHeader.Text = "Fitur : Teleport"
+tpHeader.Text = "Teleport"
 tpHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
 tpHeader.Font = Enum.Font.GothamBold
 tpHeader.TextSize = 12
@@ -418,12 +426,12 @@ tpBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- BUILD INFO TAB (AUTO FIT SCROLL)
+-- BUILD INFO TAB
 local InfoText = Instance.new("TextLabel")
 InfoText.Size = UDim2.new(1, 0, 0, 0)
 InfoText.AutomaticSize = Enum.AutomaticSize.Y
 InfoText.BackgroundTransparency = 1
-InfoText.Text = "<b>EXZET HUB - ONTOP</b>\n\n<b>Version:</b> 2.5 Structured Release\n<b>Status:</b> Undetected (Bypass Anti-Cheat)\n<b>Owner:</b> Exzet Home - Community\n\n<b>Penjelasan Fitur:</b>\n• <i>Fitur Player:</i> Atur kecepatan jalan, tinggi lompatan, terbang, kecepatan berenang, dan infinite jump.\n• <i>Kebal Tembakan:</i> Mengunci darah karakter agar tidak berkurang dari tembakan/kill block.\n• <i>Kebal Guard:</i> Mematikan fisik collision Guard agar pukulan tidak terdeteksi & telur tidak jatuh.\n• <i>Teleport:</i> Menyimpan titik koordinat dan melakukan teleportasi secara instan."
+InfoText.Text = "<b>EXZET HUB - ONTOP</b>\n\n<b>Version:</b> 2.6 Clean Release\n<b>Status:</b> Undetected (Bypass Anti-Cheat)\n<b>Owner:</b> Exzet Home Community\n\n<b>Penjelasan Fitur:</b>\n• <i>Player:</i> Ini masih beta ya gw masih belajar ini pun cuma vibe coding mwhehehe, enjoy aja ya dengan fitur kek gini😘"
 InfoText.TextColor3 = Color3.fromRGB(220, 220, 220)
 InfoText.Font = Enum.Font.Gotham
 InfoText.TextSize = 11
