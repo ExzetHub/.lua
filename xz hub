@@ -1,5 +1,5 @@
 -- ============================================
--- EXZET HUB - ONTOP (v2.6 CLEAN DROPDOWNS)
+-- EXZET HUB - BETA VERSION (VIBE CODING EDITION)
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -66,7 +66,7 @@ Header.Parent = MainFrame
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -70, 1, 0)
 Title.Position = UDim2.new(0, 12, 0, 0)
-Title.Text = "Exzet Hub - Beta Version 1"
+Title.Text = "Exzet Hub - Beta Version"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 13
@@ -276,7 +276,7 @@ Instance.new("UICorner", playerGroup).CornerRadius = UDim.new(0, 6)
 local playerHeader = Instance.new("TextButton")
 playerHeader.Size = UDim2.new(1, 0, 0, 36)
 playerHeader.BackgroundTransparency = 1
-playerHeader.Text = "  Player  [ + ]"
+playerHeader.Text = "  Player  ▼"
 playerHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
 playerHeader.Font = Enum.Font.GothamBold
 playerHeader.TextSize = 12
@@ -315,7 +315,7 @@ end)
 local isPlayerOpen = false
 playerHeader.MouseButton1Click:Connect(function()
     isPlayerOpen = not isPlayerOpen
-    playerHeader.Text = isPlayerOpen and "  Player  [ - ]" or "  Player  [ + ]"
+    playerHeader.Text = isPlayerOpen and "  Player  ▲" or "  Player  ▼"
     local targetHeight = isPlayerOpen and (38 + pList.AbsoluteContentSize.Y + 8) or 36
     TweenService:Create(playerGroup, TweenInfo.new(0.25), {Size = UDim2.new(1, 0, 0, targetHeight)}):Play()
 end)
@@ -331,7 +331,7 @@ Instance.new("UICorner", godGroup).CornerRadius = UDim.new(0, 6)
 local godHeader = Instance.new("TextButton")
 godHeader.Size = UDim2.new(1, 0, 0, 36)
 godHeader.BackgroundTransparency = 1
-godHeader.Text = "  God Mode  [ + ]"
+godHeader.Text = "  God Mode  ▼"
 godHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
 godHeader.Font = Enum.Font.GothamBold
 godHeader.TextSize = 12
@@ -358,7 +358,7 @@ end)
 local isGodOpen = false
 godHeader.MouseButton1Click:Connect(function()
     isGodOpen = not isGodOpen
-    godHeader.Text = isGodOpen and "  God Mode  [ - ]" or "  God Mode  [ + ]"
+    godHeader.Text = isGodOpen and "  God Mode  ▲" or "  God Mode  ▼"
     local targetHeight = isGodOpen and (38 + gList.AbsoluteContentSize.Y + 8) or 36
     TweenService:Create(godGroup, TweenInfo.new(0.25), {Size = UDim2.new(1, 0, 0, targetHeight)}):Play()
 end)
@@ -426,12 +426,12 @@ tpBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- BUILD INFO TAB
+-- BUILD INFO TAB (DENGAN VERSION, STATUS, OWNER, DAN YAPPINGAN)
 local InfoText = Instance.new("TextLabel")
 InfoText.Size = UDim2.new(1, 0, 0, 0)
 InfoText.AutomaticSize = Enum.AutomaticSize.Y
 InfoText.BackgroundTransparency = 1
-InfoText.Text = "<b>EXZET HUB - ONTOP</b>\n\n<b>Version:</b> 2.6 Clean Release\n<b>Status:</b> Undetected (Bypass Anti-Cheat)\n<b>Owner:</b> Exzet Home Community\n\n<b>Yappingan:</b>\n• <i>Player:</i> Ini masih beta ya gw masih belajar ini pun cuma vibe coding mwhehehe, enjoy aja ya dengan fitur kek gini😘"
+InfoText.Text = "<b>EXZET HUB - BETA VERSION</b>\n\n<b>Version:</b> 2.6 Beta Release\n<b>Status:</b> Undetected (Bypass Anti-Cheat)\n<b>Owner:</b> Exzet Community\n\nIni masih beta ya gw masih belajar ini pun cuma vibe coding mwhehehe, enjoy aja ya dengan fitur kek gini😘"
 InfoText.TextColor3 = Color3.fromRGB(220, 220, 220)
 InfoText.Font = Enum.Font.Gotham
 InfoText.TextSize = 11
@@ -485,7 +485,7 @@ NoBtn.ZIndex = 11
 NoBtn.Parent = ConfirmFrame
 Instance.new("UICorner", NoBtn).CornerRadius = UDim.new(0, 5)
 
--- MINIMIZE & CLOSE LOGIC
+-- MINIMIZE & CLOSE LOGIC (LEBIH LEBAR DAN RAPI SAAT MINIMIZE)
 local isMinimized = false
 local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 
@@ -496,8 +496,8 @@ MinBtn.MouseButton1Click:Connect(function()
         MainContent.Visible = false
         InfoContent.Visible = false
         TabBar.Visible = false
-        TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 170, 0, 35)}):Play()
-        TweenService:Create(FrameCorner, tweenInfo, {CornerRadius = UDim.new(1, 0)}):Play()
+        TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 250, 0, 35)}):Play()
+        TweenService:Create(FrameCorner, tweenInfo, {CornerRadius = UDim.new(0, 8)}):Play()
     else
         MinBtn.Text = "-"
         local tween = TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 480, 0, 280)})
