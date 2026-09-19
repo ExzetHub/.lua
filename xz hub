@@ -1,5 +1,5 @@
 -- ============================================
--- EXZET HUB - ONTOP (SAFE SPEED & REAL FLY)
+-- EXZET HUB - ONTOP (REDESIGNED & BYPASS)
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -18,6 +18,7 @@ _G.JumpPowerVal = 100
 _G.FlyToggle = false
 _G.FlySpeed = 50
 
+_G.GodModeToggle = false
 _G.InfJump = false
 _G.SavedCFrame = nil
 
@@ -33,12 +34,12 @@ ScreenGui.Name = "ExzetFinalHub"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = ParentGui
 
--- 2. MAIN FRAME (Panjang Horizontal)
+-- 2. MAIN FRAME
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 460, 0, 250)
-MainFrame.Position = UDim2.new(0.5, -230, 0.35, -125)
+MainFrame.Size = UDim2.new(0, 480, 0, 270)
+MainFrame.Position = UDim2.new(0.5, -240, 0.35, -135)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 5, 5)
-MainFrame.BackgroundTransparency = 0.25
+MainFrame.BackgroundTransparency = 0.15
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.ClipsDescendants = true
@@ -50,7 +51,6 @@ FrameCorner.CornerRadius = UDim.new(0, 10)
 local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Color = Color3.fromRGB(220, 30, 30)
 MainStroke.Thickness = 1.5
-MainStroke.Transparency = 0.3
 
 -- 3. HEADER BAR
 local Header = Instance.new("Frame")
@@ -61,7 +61,7 @@ Header.Parent = MainFrame
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -70, 1, 0)
 Title.Position = UDim2.new(0, 12, 0, 0)
-Title.Text = "Exzet Hub - Ontop"
+Title.Text = "Exzet Hub - Beta"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 13
@@ -69,42 +69,289 @@ Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.BackgroundTransparency = 1
 Title.Parent = Header
 
--- MINIMIZE BUTTON (-)
 local MinBtn = Instance.new("TextButton")
 MinBtn.Size = UDim2.new(0, 22, 0, 22)
 MinBtn.Position = UDim2.new(1, -54, 0, 6.5)
 MinBtn.Text = "-"
 MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 MinBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
-MinBtn.BackgroundTransparency = 0.3
 MinBtn.Font = Enum.Font.GothamBold
-MinBtn.TextSize = 14
 MinBtn.Parent = Header
 Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 5)
 
--- CLOSE BUTTON (X)
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 22, 0, 22)
 CloseBtn.Position = UDim2.new(1, -27, 0, 6.5)
 CloseBtn.Text = "X"
 CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
-CloseBtn.BackgroundTransparency = 0.3
 CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.TextSize = 12
 CloseBtn.Parent = Header
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 5)
 
--- 4. CONFIRMATION POPUP
+-- TAB NAVIGATION BAR
+local TabBar = Instance.new("Frame")
+TabBar.Size = UDim2.new(1, -20, 0, 28)
+TabBar.Position = UDim2.new(0, 10, 0, 35)
+TabBar.BackgroundTransparency = 1
+TabBar.Parent = MainFrame
+
+local TabMainBtn = Instance.new("TextButton")
+TabMainBtn.Size = UDim2.new(0.5, -4, 1, 0)
+TabMainBtn.Position = UDim2.new(0, 0, 0, 0)
+TabMainBtn.BackgroundColor3 = Color3.fromRGB(180, 30, 30)
+TabMainBtn.Text = "Main Features"
+TabMainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+TabMainBtn.Font = Enum.Font.GothamBold
+TabMainBtn.TextSize = 11
+TabMainBtn.Parent = TabBar
+Instance.new("UICorner", TabMainBtn).CornerRadius = UDim.new(0, 6)
+
+local TabInfoBtn = Instance.new("TextButton")
+TabInfoBtn.Size = UDim2.new(0.5, -4, 1, 0)
+TabInfoBtn.Position = UDim2.new(0.5, 4, 0, 0)
+TabInfoBtn.BackgroundColor3 = Color3.fromRGB(35, 15, 15)
+TabInfoBtn.Text = "Info Script"
+TabInfoBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+TabInfoBtn.Font = Enum.Font.GothamBold
+TabInfoBtn.TextSize = 11
+TabInfoBtn.Parent = TabBar
+Instance.new("UICorner", TabInfoBtn).CornerRadius = UDim.new(0, 6)
+
+-- CONTAINERS
+local MainContent = Instance.new("ScrollingFrame")
+MainContent.Size = UDim2.new(1, -20, 1, -72)
+MainContent.Position = UDim2.new(0, 10, 0, 68)
+MainContent.BackgroundTransparency = 1
+MainContent.CanvasSize = UDim2.new(0, 0, 0, 260)
+MainContent.ScrollBarThickness = 2
+MainContent.ScrollBarImageColor3 = Color3.fromRGB(220, 30, 30)
+MainContent.Parent = MainFrame
+
+local InfoContent = Instance.new("Frame")
+InfoContent.Size = UDim2.new(1, -20, 1, -72)
+InfoContent.Position = UDim2.new(0, 10, 0, 68)
+InfoContent.BackgroundTransparency = 1
+InfoContent.Visible = false
+InfoContent.Parent = MainFrame
+
+local UIList = Instance.new("UIListLayout", MainContent)
+UIList.Padding = UDim.new(0, 6)
+
+-- TAB SWITCHING
+TabMainBtn.MouseButton1Click:Connect(function()
+    MainContent.Visible = true
+    InfoContent.Visible = false
+    TabMainBtn.BackgroundColor3 = Color3.fromRGB(180, 30, 30)
+    TabMainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TabInfoBtn.BackgroundColor3 = Color3.fromRGB(35, 15, 15)
+    TabInfoBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+end)
+
+TabInfoBtn.MouseButton1Click:Connect(function()
+    MainContent.Visible = false
+    InfoContent.Visible = true
+    TabInfoBtn.BackgroundColor3 = Color3.fromRGB(180, 30, 30)
+    TabInfoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TabMainBtn.BackgroundColor3 = Color3.fromRGB(35, 15, 15)
+    TabMainBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+end)
+
+-- HELPER: SWITCH TOGGLE
+local function createSwitch(parent, defaultState, onToggle)
+    local switchBg = Instance.new("Frame")
+    switchBg.Size = UDim2.new(0, 38, 0, 20)
+    switchBg.Position = UDim2.new(1, -45, 0.5, -10)
+    switchBg.BackgroundColor3 = defaultState and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(80, 80, 85)
+    switchBg.Parent = parent
+    Instance.new("UICorner", switchBg).CornerRadius = UDim.new(1, 0)
+
+    local circle = Instance.new("Frame")
+    circle.Size = UDim2.new(0, 16, 0, 16)
+    circle.Position = defaultState and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
+    circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    circle.Parent = switchBg
+    Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
+
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 1, 0)
+    btn.BackgroundTransparency = 1
+    btn.Text = ""
+    btn.Parent = switchBg
+
+    local state = defaultState
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        if state then
+            TweenService:Create(switchBg, tweenInfo, {BackgroundColor3 = Color3.fromRGB(50, 200, 50)}):Play()
+            TweenService:Create(circle, tweenInfo, {Position = UDim2.new(1, -18, 0.5, -8)}):Play()
+        else
+            TweenService:Create(switchBg, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 85)}):Play()
+            TweenService:Create(circle, tweenInfo, {Position = UDim2.new(0, 2, 0.5, -8)}):Play()
+        end
+        onToggle(state)
+    end)
+end
+
+-- HELPER: INPUT + TOGGLE FEATURE
+local function createFeatureWithInput(titleText, defaultVal, onInputChanged, onToggleChanged)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, 0, 0, 36)
+    container.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
+    container.BackgroundTransparency = 0.5
+    container.Parent = MainContent
+    Instance.new("UICorner", container).CornerRadius = UDim.new(0, 6)
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.35, 0, 1, 0)
+    label.Position = UDim2.new(0, 10, 0, 0)
+    label.Text = titleText
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 11
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.BackgroundTransparency = 1
+    label.Parent = container
+
+    local box = Instance.new("TextBox")
+    box.Size = UDim2.new(0.2, 0, 0, 22)
+    box.Position = UDim2.new(0.65, -50, 0.5, -11)
+    box.BackgroundColor3 = Color3.fromRGB(35, 15, 15)
+    box.Text = tostring(defaultVal)
+    box.TextColor3 = Color3.fromRGB(255, 255, 255)
+    box.Font = Enum.Font.Gotham
+    box.TextSize = 11
+    box.Parent = container
+    Instance.new("UICorner", box).CornerRadius = UDim.new(0, 4)
+
+    box.FocusLost:Connect(function()
+        onInputChanged(box.Text)
+    end)
+
+    createSwitch(container, false, onToggleChanged)
+end
+
+-- HELPER: TOGGLE ONLY FEATURE
+local function createFeatureToggleOnly(titleText, defaultState, onToggleChanged)
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, 0, 0, 36)
+    container.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
+    container.BackgroundTransparency = 0.5
+    container.Parent = MainContent
+    Instance.new("UICorner", container).CornerRadius = UDim.new(0, 6)
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.6, 0, 1, 0)
+    label.Position = UDim2.new(0, 10, 0, 0)
+    label.Text = titleText
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 11
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.BackgroundTransparency = 1
+    label.Parent = container
+
+    createSwitch(container, defaultState, onToggleChanged)
+end
+
+-- BUILD MAIN FEATURES
+createFeatureWithInput("WalkSpeed", 50, function(val)
+    local num = tonumber(val)
+    if num then _G.WalkSpeedVal = num end
+end, function(state) _G.WalkSpeedToggle = state end)
+
+createFeatureWithInput("JumpHeight", 100, function(val)
+    local num = tonumber(val)
+    if num then _G.JumpPowerVal = num end
+end, function(state) _G.JumpPowerToggle = state end)
+
+createFeatureWithInput("Fly Speed", 50, function(val)
+    local num = tonumber(val)
+    if num then _G.FlySpeed = num end
+end, function(state) _G.FlyToggle = state end)
+
+createFeatureToggleOnly("God Mode (Kebal)", false, function(state)
+    _G.GodModeToggle = state
+end)
+
+createFeatureToggleOnly("Infinite Jump", false, function(state)
+    _G.InfJump = state
+end)
+
+-- TELEPORT SECTION
+local tpContainer = Instance.new("Frame")
+tpContainer.Size = UDim2.new(1, 0, 0, 36)
+tpContainer.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
+tpContainer.BackgroundTransparency = 0.5
+tpContainer.Parent = MainContent
+Instance.new("UICorner", tpContainer).CornerRadius = UDim.new(0, 6)
+
+local setBtn = Instance.new("TextButton")
+setBtn.Size = UDim2.new(0.48, -4, 0, 24)
+setBtn.Position = UDim2.new(0, 6, 0.5, -12)
+setBtn.BackgroundColor3 = Color3.fromRGB(35, 15, 15)
+setBtn.Text = "Set Point"
+setBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+setBtn.Font = Enum.Font.GothamBold
+setBtn.TextSize = 11
+setBtn.Parent = tpContainer
+Instance.new("UICorner", setBtn).CornerRadius = UDim.new(0, 4)
+
+local tpBtn = Instance.new("TextButton")
+tpBtn.Size = UDim2.new(0.48, -4, 0, 24)
+tpBtn.Position = UDim2.new(0.5, 2, 0.5, -12)
+tpBtn.BackgroundColor3 = Color3.fromRGB(50, 20, 20)
+tpBtn.Text = "TP to Point"
+tpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+tpBtn.Font = Enum.Font.GothamBold
+tpBtn.TextSize = 11
+tpBtn.Parent = tpContainer
+Instance.new("UICorner", tpBtn).CornerRadius = UDim.new(0, 4)
+
+setBtn.MouseButton1Click:Connect(function()
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        _G.SavedCFrame = hrp.CFrame
+        setBtn.Text = "Saved!"
+        task.wait(1)
+        setBtn.Text = "Set Point"
+    end
+end)
+
+tpBtn.MouseButton1Click:Connect(function()
+    if _G.SavedCFrame then
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then hrp.CFrame = _G.SavedCFrame end
+    else
+        tpBtn.Text = "No Point!"
+        task.wait(1)
+        tpBtn.Text = "TP to Point"
+    end
+end)
+
+-- BUILD INFO TAB
+local InfoText = Instance.new("TextLabel")
+InfoText.Size = UDim2.new(1, 0, 1, 0)
+InfoText.BackgroundTransparency = 1
+InfoText.Text = "<b>EXZET HUB - ONTOP</b>\n\n<b>Version:</b> 2.0 Safe Bypass\n<b>Status:</b> Undetected (Anti-Rubberband Active)\n<b>Owner:</b> Exzet Community\n\n<i>Fitur Bypass otomatis aktif untuk mencegah efek mental saat mengubah WalkSpeed/JumpHeight.</i>"
+InfoText.TextColor3 = Color3.fromRGB(220, 220, 220)
+InfoText.Font = Enum.Font.Gotham
+InfoText.TextSize = 12
+InfoText.RichText = true
+InfoText.TextYAlignment = Enum.TextYAlignment.Top
+InfoText.Parent = InfoContent
+
+-- CONFIRMATION POPUP
 local ConfirmFrame = Instance.new("Frame")
 ConfirmFrame.Size = UDim2.new(0, 210, 0, 95)
 ConfirmFrame.Position = UDim2.new(0.5, -105, 0.5, -47)
 ConfirmFrame.BackgroundColor3 = Color3.fromRGB(15, 5, 5)
-ConfirmFrame.BackgroundTransparency = 0.1
 ConfirmFrame.Visible = false
 ConfirmFrame.ZIndex = 10
 ConfirmFrame.Parent = ScreenGui
-
 Instance.new("UICorner", ConfirmFrame).CornerRadius = UDim.new(0, 8)
 local ConfirmStroke = Instance.new("UIStroke", ConfirmFrame)
 ConfirmStroke.Color = Color3.fromRGB(220, 30, 30)
@@ -112,7 +359,7 @@ ConfirmStroke.Color = Color3.fromRGB(220, 30, 30)
 local ConfirmText = Instance.new("TextLabel")
 ConfirmText.Size = UDim2.new(1, -20, 0, 30)
 ConfirmText.Position = UDim2.new(0, 10, 0, 12)
-ConfirmText.Text = "confirm to close script"
+ConfirmText.Text = "Close script execution?"
 ConfirmText.TextColor3 = Color3.fromRGB(255, 255, 255)
 ConfirmText.Font = Enum.Font.Gotham
 ConfirmText.TextSize = 12
@@ -142,217 +389,32 @@ NoBtn.ZIndex = 11
 NoBtn.Parent = ConfirmFrame
 Instance.new("UICorner", NoBtn).CornerRadius = UDim.new(0, 5)
 
--- CONTENT SCROLL
-local Content = Instance.new("ScrollingFrame")
-Content.Size = UDim2.new(1, -20, 1, -42)
-Content.Position = UDim2.new(0, 10, 0, 36)
-Content.BackgroundTransparency = 1
-Content.CanvasSize = UDim2.new(0, 0, 0, 220)
-Content.ScrollBarThickness = 2
-Content.ScrollBarImageColor3 = Color3.fromRGB(220, 30, 30)
-Content.Parent = MainFrame
-
-local UIList = Instance.new("UIListLayout", Content)
-UIList.Padding = UDim.new(0, 8)
-
--- HELPER: SWITCH TOGGLE
-local function createSwitch(parent, onToggle)
-    local switchBg = Instance.new("Frame")
-    switchBg.Size = UDim2.new(0, 38, 0, 20)
-    switchBg.Position = UDim2.new(1, -45, 0.5, -10)
-    switchBg.BackgroundColor3 = Color3.fromRGB(80, 80, 85)
-    switchBg.Parent = parent
-    Instance.new("UICorner", switchBg).CornerRadius = UDim.new(1, 0)
-
-    local circle = Instance.new("Frame")
-    circle.Size = UDim2.new(0, 16, 0, 16)
-    circle.Position = UDim2.new(0, 2, 0.5, -8)
-    circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    circle.Parent = switchBg
-    Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
-
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(1, 0, 1, 0)
-    btn.BackgroundTransparency = 1
-    btn.Text = ""
-    btn.Parent = switchBg
-
-    local state = false
-    btn.MouseButton1Click:Connect(function()
-        state = not state
-        local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-        
-        if state then
-            TweenService:Create(switchBg, tweenInfo, {BackgroundColor3 = Color3.fromRGB(50, 200, 50)}):Play()
-            TweenService:Create(circle, tweenInfo, {Position = UDim2.new(1, -18, 0.5, -8)}):Play()
-        else
-            TweenService:Create(switchBg, tweenInfo, {BackgroundColor3 = Color3.fromRGB(80, 80, 85)}):Play()
-            TweenService:Create(circle, tweenInfo, {Position = UDim2.new(0, 2, 0.5, -8)}):Play()
-        end
-        onToggle(state)
-    end)
-end
-
--- HELPER: ITEM HORIZONTAL
-local function createFeatureHorizontal(titleText, defaultVal, onInputChanged, onToggleChanged)
-    local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, 0, 0, 38)
-    container.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
-    container.BackgroundTransparency = 0.5
-    container.Parent = Content
-    Instance.new("UICorner", container).CornerRadius = UDim.new(0, 6)
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.4, 0, 1, 0)
-    label.Position = UDim2.new(0, 10, 0, 0)
-    label.Text = titleText
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.Font = Enum.Font.GothamBold
-    label.TextSize = 11
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.BackgroundTransparency = 1
-    label.Parent = container
-
-    local box = Instance.new("TextBox")
-    box.Size = UDim2.new(0.25, 0, 0, 24)
-    box.Position = UDim2.new(0.42, 0, 0.5, -12)
-    box.BackgroundColor3 = Color3.fromRGB(35, 15, 15)
-    box.Text = tostring(defaultVal)
-    box.TextColor3 = Color3.fromRGB(255, 255, 255)
-    box.Font = Enum.Font.Gotham
-    box.TextSize = 11
-    box.Parent = container
-    Instance.new("UICorner", box).CornerRadius = UDim.new(0, 4)
-
-    box.FocusLost:Connect(function()
-        onInputChanged(box.Text)
-    end)
-
-    createSwitch(container, onToggleChanged)
-end
-
--- FITUR 1: WalkSpeed
-createFeatureHorizontal("WalkSpeed", 50, function(val)
-    local num = tonumber(val)
-    if num then _G.WalkSpeedVal = num end
-end, function(state)
-    _G.WalkSpeedToggle = state
-end)
-
--- FITUR 2: JumpHeight
-createFeatureHorizontal("JumpHeight", 100, function(val)
-    local num = tonumber(val)
-    if num then _G.JumpPowerVal = num end
-end, function(state)
-    _G.JumpPowerToggle = state
-end)
-
--- FITUR 3: Fly
-createFeatureHorizontal("Fly (Terbang)", 50, function(val)
-    local num = tonumber(val)
-    if num then _G.FlySpeed = num end
-end, function(state)
-    _G.FlyToggle = state
-end)
-
--- FITUR 4: Infinite Jump
-local infContainer = Instance.new("Frame")
-infContainer.Size = UDim2.new(1, 0, 0, 38)
-infContainer.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
-infContainer.BackgroundTransparency = 0.5
-infContainer.Parent = Content
-Instance.new("UICorner", infContainer).CornerRadius = UDim.new(0, 6)
-
-local infLabel = Instance.new("TextLabel")
-infLabel.Size = UDim2.new(0.6, 0, 1, 0)
-infLabel.Position = UDim2.new(0, 10, 0, 0)
-infLabel.Text = "Infinite Jump"
-infLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-infLabel.Font = Enum.Font.GothamBold
-infLabel.TextSize = 11
-infLabel.TextXAlignment = Enum.TextXAlignment.Left
-infLabel.BackgroundTransparency = 1
-infLabel.Parent = infContainer
-
-createSwitch(infContainer, function(state)
-    _G.InfJump = state
-end)
-
--- FITUR 5: Teleport
-local tpContainer = Instance.new("Frame")
-tpContainer.Size = UDim2.new(1, 0, 0, 38)
-tpContainer.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
-tpContainer.BackgroundTransparency = 0.5
-tpContainer.Parent = Content
-Instance.new("UICorner", tpContainer).CornerRadius = UDim.new(0, 6)
-
-local setBtn = Instance.new("TextButton")
-setBtn.Size = UDim2.new(0, 180, 0, 24)
-setBtn.Position = UDim2.new(0, 8, 0.5, -12)
-setBtn.BackgroundColor3 = Color3.fromRGB(35, 15, 15)
-setBtn.Text = "Set Point"
-setBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-setBtn.Font = Enum.Font.GothamBold
-setBtn.TextSize = 11
-setBtn.Parent = tpContainer
-Instance.new("UICorner", setBtn).CornerRadius = UDim.new(0, 4)
-
-local tpBtn = Instance.new("TextButton")
-tpBtn.Size = UDim2.new(0, 180, 0, 24)
-tpBtn.Position = UDim2.new(0, 200, 0.5, -12)
-tpBtn.BackgroundColor3 = Color3.fromRGB(50, 20, 20)
-tpBtn.Text = "TP to Point"
-tpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-tpBtn.Font = Enum.Font.GothamBold
-tpBtn.TextSize = 11
-tpBtn.Parent = tpContainer
-Instance.new("UICorner", tpBtn).CornerRadius = UDim.new(0, 4)
-
-setBtn.MouseButton1Click:Connect(function()
-    local char = LocalPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if hrp then
-        _G.SavedCFrame = hrp.CFrame
-        setBtn.Text = "Saved!"
-        task.wait(1)
-        setBtn.Text = "Set Point"
-    end
-end)
-
-tpBtn.MouseButton1Click:Connect(function()
-    if _G.SavedCFrame then
-        local char = LocalPlayer.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            hrp.CFrame = _G.SavedCFrame
-        end
-    else
-        tpBtn.Text = "No Point!"
-        task.wait(1)
-        tpBtn.Text = "TP to Point"
-    end
-end)
-
--- MINIMIZE & CLOSE SYSTEM
+-- MINIMIZE & CLOSE LOGIC
 local isMinimized = false
 local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 
 MinBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
-    
     if isMinimized then
         MinBtn.Text = "+"
-        Content.Visible = false
+        MainContent.Visible = false
+        InfoContent.Visible = false
+        TabBar.Visible = false
         TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 170, 0, 35)}):Play()
         TweenService:Create(FrameCorner, tweenInfo, {CornerRadius = UDim.new(1, 0)}):Play()
     else
         MinBtn.Text = "-"
-        local tween = TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 460, 0, 250)})
+        local tween = TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 480, 0, 270)})
         TweenService:Create(FrameCorner, tweenInfo, {CornerRadius = UDim.new(0, 10)}):Play()
         tween:Play()
         tween.Completed:Connect(function()
             if not isMinimized then
-                Content.Visible = true
+                TabBar.Visible = true
+                if TabMainBtn.TextColor3 == Color3.fromRGB(255, 255, 255) then
+                    MainContent.Visible = true
+                else
+                    InfoContent.Visible = true
+                end
             end
         end)
     end
@@ -364,22 +426,21 @@ YesBtn.MouseButton1Click:Connect(function()
     _G.WalkSpeedToggle = false
     _G.JumpPowerToggle = false
     _G.FlyToggle = false
+    _G.GodModeToggle = false
     _G.InfJump = false
     ScreenGui:Destroy()
 end)
 
--- INFINITE JUMP
+-- INFINITE JUMP LOGIC
 UserInputService.JumpRequest:Connect(function()
     if _G.InfJump then
         local char = LocalPlayer.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
-        if hum then
-            hum:ChangeState(Enum.HumanoidStateType.Jumping)
-        end
+        if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
     end
 end)
 
--- FLY MECHANIC (SMOOTH REAL FLYING WITH CAMERA ANGLE)
+-- REAL FLY MECHANIC
 local flyBodyVelocity, flyBodyGyro
 RunService.RenderStepped:Connect(function()
     local char = LocalPlayer.Character
@@ -404,7 +465,6 @@ RunService.RenderStepped:Connect(function()
 
         local moveDir = hum.MoveDirection
         if moveDir.Magnitude > 0 then
-            -- Mendorong posisi sesuai arah kamera (termasuk naik ke atas saat kamera diarahin ke atas)
             flyBodyVelocity.Velocity = cam.CFrame.LookVector * (moveDir.Magnitude * _G.FlySpeed)
         else
             flyBodyVelocity.Velocity = Vector3.zero
@@ -412,11 +472,40 @@ RunService.RenderStepped:Connect(function()
     else
         if flyBodyVelocity then flyBodyVelocity:Destroy() flyBodyVelocity = nil end
         if flyBodyGyro then flyBodyGyro:Destroy() flyBodyGyro = nil end
-        if hum then hum.PlatformStand = false end
+        if hum and not _G.FlyToggle then hum.PlatformStand = false end
     end
 end)
 
--- MOVEMENT LISTENER (HANYA MENGUBAH APABILA TOMBOL TOGGLE ON)
+-- GOD MODE LOGIC & BYPASS ANTI-RUBBERBAND SYSTEM
+RunService.Heartbeat:Connect(function()
+    local char = LocalPlayer.Character
+    if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+
+    -- 1. God Mode Logic (Local Lock & Forcefield)
+    if _G.GodModeToggle and hum then
+        hum.Health = hum.MaxHealth
+        if not char:FindFirstChildOfClass("ForceField") then
+            local ff = Instance.new("ForceField")
+            ff.Name = "GodModeFF"
+            ff.Visible = false
+            ff.Parent = char
+        end
+    else
+        if char:FindFirstChild("GodModeFF") then
+            char.GodModeFF:Destroy()
+        end
+    end
+
+    -- 2. Anti-Rubberband / Anti-Mental Bypass Logic
+    if hrp and (_G.WalkSpeedToggle or _G.JumpPowerToggle) then
+        -- Mencegah NetworkOwner memental akibat deteksi kecepatan mendadak
+        sethiddenproperty(hrp, "NetworkIsSleeping", false)
+    end
+end)
+
+-- MOVEMENT LOOP (WALKSPEED & JUMPHEIGHT)
 task.spawn(function()
     while true do
         pcall(function()
@@ -428,10 +517,11 @@ task.spawn(function()
                 end
 
                 if _G.JumpPowerToggle then
+                    hum.UseJumpPower = true
                     hum.JumpPower = _G.JumpPowerVal
                 end
             end
         end)
-        task.wait(0.2)
+        task.wait(0.1)
     end
 end)
