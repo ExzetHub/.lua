@@ -1,5 +1,5 @@
 -- ============================================
--- EXZET HUB - ONTOP (REDESIGNED & BYPASS)
+-- EXZET HUB - ONTOP (v2.5 RESTRUCTURED)
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -18,7 +18,12 @@ _G.JumpPowerVal = 100
 _G.FlyToggle = false
 _G.FlySpeed = 50
 
+_G.SwimSpeedToggle = false
+_G.SwimSpeedVal = 60
+
 _G.GodModeToggle = false
+_G.GuardBypassToggle = false
+
 _G.InfJump = false
 _G.SavedCFrame = nil
 
@@ -36,8 +41,8 @@ ScreenGui.Parent = ParentGui
 
 -- 2. MAIN FRAME
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 480, 0, 270)
-MainFrame.Position = UDim2.new(0.5, -240, 0.35, -135)
+MainFrame.Size = UDim2.new(0, 480, 0, 280)
+MainFrame.Position = UDim2.new(0.5, -240, 0.35, -140)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 5, 5)
 MainFrame.BackgroundTransparency = 0.15
 MainFrame.Active = true
@@ -61,7 +66,7 @@ Header.Parent = MainFrame
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -70, 1, 0)
 Title.Position = UDim2.new(0, 12, 0, 0)
-Title.Text = "Exzet Hub - Beta"
+Title.Text = "Exzet Hub - Beta (v2.5)"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 13
@@ -123,15 +128,20 @@ local MainContent = Instance.new("ScrollingFrame")
 MainContent.Size = UDim2.new(1, -20, 1, -72)
 MainContent.Position = UDim2.new(0, 10, 0, 68)
 MainContent.BackgroundTransparency = 1
-MainContent.CanvasSize = UDim2.new(0, 0, 0, 260)
+MainContent.CanvasSize = UDim2.new(0, 0, 0, 0)
+MainContent.AutomaticCanvasSize = Enum.AutomaticSize.Y
 MainContent.ScrollBarThickness = 2
 MainContent.ScrollBarImageColor3 = Color3.fromRGB(220, 30, 30)
 MainContent.Parent = MainFrame
 
-local InfoContent = Instance.new("Frame")
+local InfoContent = Instance.new("ScrollingFrame")
 InfoContent.Size = UDim2.new(1, -20, 1, -72)
 InfoContent.Position = UDim2.new(0, 10, 0, 68)
 InfoContent.BackgroundTransparency = 1
+InfoContent.CanvasSize = UDim2.new(0, 0, 0, 0)
+InfoContent.AutomaticCanvasSize = Enum.AutomaticSize.Y
+InfoContent.ScrollBarThickness = 2
+InfoContent.ScrollBarImageColor3 = Color3.fromRGB(220, 30, 30)
 InfoContent.Visible = false
 InfoContent.Parent = MainFrame
 
@@ -195,20 +205,20 @@ local function createSwitch(parent, defaultState, onToggle)
 end
 
 -- HELPER: INPUT + TOGGLE FEATURE
-local function createFeatureWithInput(titleText, defaultVal, onInputChanged, onToggleChanged)
+local function createFeatureWithInput(parentTarget, titleText, defaultVal, onInputChanged, onToggleChanged)
     local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, 0, 0, 36)
-    container.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
-    container.BackgroundTransparency = 0.5
-    container.Parent = MainContent
-    Instance.new("UICorner", container).CornerRadius = UDim.new(0, 6)
+    container.Size = UDim2.new(1, 0, 0, 34)
+    container.BackgroundColor3 = Color3.fromRGB(30, 12, 12)
+    container.BackgroundTransparency = 0.4
+    container.Parent = parentTarget
+    Instance.new("UICorner", container).CornerRadius = UDim.new(0, 5)
 
     local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.35, 0, 1, 0)
+    label.Size = UDim2.new(0.4, 0, 1, 0)
     label.Position = UDim2.new(0, 10, 0, 0)
     label.Text = titleText
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.Font = Enum.Font.GothamBold
+    label.TextColor3 = Color3.fromRGB(230, 230, 230)
+    label.Font = Enum.Font.Gotham
     label.TextSize = 11
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.BackgroundTransparency = 1
@@ -217,7 +227,7 @@ local function createFeatureWithInput(titleText, defaultVal, onInputChanged, onT
     local box = Instance.new("TextBox")
     box.Size = UDim2.new(0.2, 0, 0, 22)
     box.Position = UDim2.new(0.65, -50, 0.5, -11)
-    box.BackgroundColor3 = Color3.fromRGB(35, 15, 15)
+    box.BackgroundColor3 = Color3.fromRGB(40, 15, 15)
     box.Text = tostring(defaultVal)
     box.TextColor3 = Color3.fromRGB(255, 255, 255)
     box.Font = Enum.Font.Gotham
@@ -233,20 +243,20 @@ local function createFeatureWithInput(titleText, defaultVal, onInputChanged, onT
 end
 
 -- HELPER: TOGGLE ONLY FEATURE
-local function createFeatureToggleOnly(titleText, defaultState, onToggleChanged)
+local function createFeatureToggleOnly(parentTarget, titleText, defaultState, onToggleChanged)
     local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, 0, 0, 36)
-    container.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
-    container.BackgroundTransparency = 0.5
-    container.Parent = MainContent
-    Instance.new("UICorner", container).CornerRadius = UDim.new(0, 6)
+    container.Size = UDim2.new(1, 0, 0, 34)
+    container.BackgroundColor3 = Color3.fromRGB(30, 12, 12)
+    container.BackgroundTransparency = 0.4
+    container.Parent = parentTarget
+    Instance.new("UICorner", container).CornerRadius = UDim.new(0, 5)
 
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0.6, 0, 1, 0)
     label.Position = UDim2.new(0, 10, 0, 0)
     label.Text = titleText
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.Font = Enum.Font.GothamBold
+    label.TextColor3 = Color3.fromRGB(230, 230, 230)
+    label.Font = Enum.Font.Gotham
     label.TextSize = 11
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.BackgroundTransparency = 1
@@ -255,58 +265,134 @@ local function createFeatureToggleOnly(titleText, defaultState, onToggleChanged)
     createSwitch(container, defaultState, onToggleChanged)
 end
 
--- BUILD MAIN FEATURES
-createFeatureWithInput("WalkSpeed", 50, function(val)
-    local num = tonumber(val)
-    if num then _G.WalkSpeedVal = num end
+-- 1. DROPDOWN GROUP: PLAYER
+local playerGroup = Instance.new("Frame")
+playerGroup.Size = UDim2.new(1, 0, 0, 36)
+playerGroup.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
+playerGroup.ClipsDescendants = true
+playerGroup.Parent = MainContent
+Instance.new("UICorner", playerGroup).CornerRadius = UDim.new(0, 6)
+
+local playerHeader = Instance.new("TextButton")
+playerHeader.Size = UDim2.new(1, 0, 0, 36)
+playerHeader.BackgroundTransparency = 1
+playerHeader.Text = "  Fitur : Player  ↓"
+playerHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
+playerHeader.Font = Enum.Font.GothamBold
+playerHeader.TextSize = 12
+playerHeader.TextXAlignment = Enum.TextXAlignment.Left
+playerHeader.Parent = playerGroup
+
+local playerContainer = Instance.new("Frame")
+playerContainer.Size = UDim2.new(1, -16, 0, 0)
+playerContainer.Position = UDim2.new(0, 8, 0, 38)
+playerContainer.BackgroundTransparency = 1
+playerContainer.Parent = playerGroup
+
+local pList = Instance.new("UIListLayout", playerContainer)
+pList.Padding = UDim.new(0, 4)
+
+createFeatureWithInput(playerContainer, "WalkSpeed", 50, function(val)
+    local num = tonumber(val) if num then _G.WalkSpeedVal = num end
 end, function(state) _G.WalkSpeedToggle = state end)
 
-createFeatureWithInput("JumpHeight", 100, function(val)
-    local num = tonumber(val)
-    if num then _G.JumpPowerVal = num end
+createFeatureWithInput(playerContainer, "JumpHeight", 100, function(val)
+    local num = tonumber(val) if num then _G.JumpPowerVal = num end
 end, function(state) _G.JumpPowerToggle = state end)
 
-createFeatureWithInput("Fly Speed", 50, function(val)
-    local num = tonumber(val)
-    if num then _G.FlySpeed = num end
+createFeatureWithInput(playerContainer, "Fly Speed", 50, function(val)
+    local num = tonumber(val) if num then _G.FlySpeed = num end
 end, function(state) _G.FlyToggle = state end)
 
-createFeatureToggleOnly("God Mode (Kebal)", false, function(state)
-    _G.GodModeToggle = state
-end)
+createFeatureWithInput(playerContainer, "Swim Speed", 60, function(val)
+    local num = tonumber(val) if num then _G.SwimSpeedVal = num end
+end, function(state) _G.SwimSpeedToggle = state end)
 
-createFeatureToggleOnly("Infinite Jump", false, function(state)
+createFeatureToggleOnly(playerContainer, "Infinite Jump", false, function(state)
     _G.InfJump = state
 end)
 
--- TELEPORT SECTION
-local tpContainer = Instance.new("Frame")
-tpContainer.Size = UDim2.new(1, 0, 0, 36)
-tpContainer.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
-tpContainer.BackgroundTransparency = 0.5
-tpContainer.Parent = MainContent
-Instance.new("UICorner", tpContainer).CornerRadius = UDim.new(0, 6)
+local isPlayerOpen = false
+playerHeader.MouseButton1Click:Connect(function()
+    isPlayerOpen = not isPlayerOpen
+    playerHeader.Text = isPlayerOpen and "  Fitur : Player  ↑" or "  Fitur : Player  ↓"
+    local targetHeight = isPlayerOpen and (38 + pList.AbsoluteContentSize.Y + 8) or 36
+    TweenService:Create(playerGroup, TweenInfo.new(0.25), {Size = UDim2.new(1, 0, 0, targetHeight)}):Play()
+end)
+
+-- 2. KATEGORI: GOD MODE
+local godGroup = Instance.new("Frame")
+godGroup.Size = UDim2.new(1, 0, 0, 118)
+godGroup.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
+godGroup.Parent = MainContent
+Instance.new("UICorner", godGroup).CornerRadius = UDim.new(0, 6)
+
+local godHeader = Instance.new("TextLabel")
+godHeader.Size = UDim2.new(1, 0, 0, 30)
+godHeader.Position = UDim2.new(0, 10, 0, 0)
+godHeader.Text = "Fitur : God Mode"
+godHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
+godHeader.Font = Enum.Font.GothamBold
+godHeader.TextSize = 12
+godHeader.TextXAlignment = Enum.TextXAlignment.Left
+godHeader.BackgroundTransparency = 1
+godHeader.Parent = godGroup
+
+local godContainer = Instance.new("Frame")
+godContainer.Size = UDim2.new(1, -16, 0, 80)
+godContainer.Position = UDim2.new(0, 8, 0, 30)
+godContainer.BackgroundTransparency = 1
+godContainer.Parent = godGroup
+
+local gList = Instance.new("UIListLayout", godContainer)
+gList.Padding = UDim.new(0, 4)
+
+createFeatureToggleOnly(godContainer, "Kebal Tembakan (Health Lock)", false, function(state)
+    _G.GodModeToggle = state
+end)
+
+createFeatureToggleOnly(godContainer, "Kebal Guard (Anti-Touch/Pukul)", false, function(state)
+    _G.GuardBypassToggle = state
+end)
+
+-- 3. KATEGORI: TELEPORT
+local tpGroup = Instance.new("Frame")
+tpGroup.Size = UDim2.new(1, 0, 0, 75)
+tpGroup.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
+tpGroup.Parent = MainContent
+Instance.new("UICorner", tpGroup).CornerRadius = UDim.new(0, 6)
+
+local tpHeader = Instance.new("TextLabel")
+tpHeader.Size = UDim2.new(1, 0, 0, 30)
+tpHeader.Position = UDim2.new(0, 10, 0, 0)
+tpHeader.Text = "Fitur : Teleport"
+tpHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
+tpHeader.Font = Enum.Font.GothamBold
+tpHeader.TextSize = 12
+tpHeader.TextXAlignment = Enum.TextXAlignment.Left
+tpHeader.BackgroundTransparency = 1
+tpHeader.Parent = tpGroup
 
 local setBtn = Instance.new("TextButton")
-setBtn.Size = UDim2.new(0.48, -4, 0, 24)
-setBtn.Position = UDim2.new(0, 6, 0.5, -12)
-setBtn.BackgroundColor3 = Color3.fromRGB(35, 15, 15)
+setBtn.Size = UDim2.new(0.48, -4, 0, 28)
+setBtn.Position = UDim2.new(0, 8, 0, 34)
+setBtn.BackgroundColor3 = Color3.fromRGB(40, 15, 15)
 setBtn.Text = "Set Point"
 setBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 setBtn.Font = Enum.Font.GothamBold
 setBtn.TextSize = 11
-setBtn.Parent = tpContainer
+setBtn.Parent = tpGroup
 Instance.new("UICorner", setBtn).CornerRadius = UDim.new(0, 4)
 
 local tpBtn = Instance.new("TextButton")
-tpBtn.Size = UDim2.new(0.48, -4, 0, 24)
-tpBtn.Position = UDim2.new(0.5, 2, 0.5, -12)
-tpBtn.BackgroundColor3 = Color3.fromRGB(50, 20, 20)
-tpBtn.Text = "TP to Point"
+tpBtn.Size = UDim2.new(0.48, -4, 0, 28)
+tpBtn.Position = UDim2.new(0.5, 2, 0, 34)
+tpBtn.BackgroundColor3 = Color3.fromRGB(60, 20, 20)
+tpBtn.Text = "TP to Point Set"
 tpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 tpBtn.Font = Enum.Font.GothamBold
 tpBtn.TextSize = 11
-tpBtn.Parent = tpContainer
+tpBtn.Parent = tpGroup
 Instance.new("UICorner", tpBtn).CornerRadius = UDim.new(0, 4)
 
 setBtn.MouseButton1Click:Connect(function()
@@ -328,19 +414,21 @@ tpBtn.MouseButton1Click:Connect(function()
     else
         tpBtn.Text = "No Point!"
         task.wait(1)
-        tpBtn.Text = "TP to Point"
+        tpBtn.Text = "TP to Point Set"
     end
 end)
 
--- BUILD INFO TAB
+-- BUILD INFO TAB (AUTO FIT SCROLL)
 local InfoText = Instance.new("TextLabel")
-InfoText.Size = UDim2.new(1, 0, 1, 0)
+InfoText.Size = UDim2.new(1, 0, 0, 0)
+InfoText.AutomaticSize = Enum.AutomaticSize.Y
 InfoText.BackgroundTransparency = 1
-InfoText.Text = "<b>EXZET HUB - ONTOP</b>\n\n<b>Version:</b> 2.0 Safe Bypass\n<b>Status:</b> Undetected (Anti-Rubberband Active)\n<b>Owner:</b> Exzet Community\n\n<i>Fitur Bypass otomatis aktif untuk mencegah efek mental saat mengubah WalkSpeed/JumpHeight.</i>"
+InfoText.Text = "<b>EXZET HUB - ONTOP</b>\n\n<b>Version:</b> 2.5 Structured Release\n<b>Status:</b> Undetected (Bypass Anti-Cheat)\n<b>Owner:</b> Exzet Home - Community\n\n<b>Penjelasan Fitur:</b>\n• <i>Fitur Player:</i> Atur kecepatan jalan, tinggi lompatan, terbang, kecepatan berenang, dan infinite jump.\n• <i>Kebal Tembakan:</i> Mengunci darah karakter agar tidak berkurang dari tembakan/kill block.\n• <i>Kebal Guard:</i> Mematikan fisik collision Guard agar pukulan tidak terdeteksi & telur tidak jatuh.\n• <i>Teleport:</i> Menyimpan titik koordinat dan melakukan teleportasi secara instan."
 InfoText.TextColor3 = Color3.fromRGB(220, 220, 220)
 InfoText.Font = Enum.Font.Gotham
-InfoText.TextSize = 12
+InfoText.TextSize = 11
 InfoText.RichText = true
+InfoText.TextWrapped = true
 InfoText.TextYAlignment = Enum.TextYAlignment.Top
 InfoText.Parent = InfoContent
 
@@ -404,7 +492,7 @@ MinBtn.MouseButton1Click:Connect(function()
         TweenService:Create(FrameCorner, tweenInfo, {CornerRadius = UDim.new(1, 0)}):Play()
     else
         MinBtn.Text = "-"
-        local tween = TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 480, 0, 270)})
+        local tween = TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 480, 0, 280)})
         TweenService:Create(FrameCorner, tweenInfo, {CornerRadius = UDim.new(0, 10)}):Play()
         tween:Play()
         tween.Completed:Connect(function()
@@ -426,7 +514,9 @@ YesBtn.MouseButton1Click:Connect(function()
     _G.WalkSpeedToggle = false
     _G.JumpPowerToggle = false
     _G.FlyToggle = false
+    _G.SwimSpeedToggle = false
     _G.GodModeToggle = false
+    _G.GuardBypassToggle = false
     _G.InfJump = false
     ScreenGui:Destroy()
 end)
@@ -476,43 +566,54 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- GOD MODE LOGIC & BYPASS ANTI-RUBBERBAND SYSTEM
-RunService.Heartbeat:Connect(function()
+-- SYSTEM LOOP (GOD MODE, GUARD BYPASS, SWIM SPEED & MOVEMENT)
+RunService.Stepped:Connect(function()
     local char = LocalPlayer.Character
     if not char then return end
     local hum = char:FindFirstChildOfClass("Humanoid")
     local hrp = char:FindFirstChild("HumanoidRootPart")
 
-    -- 1. God Mode Logic (Local Lock & Forcefield)
+    -- 1. Kebal Tembakan (Health Lock)
     if _G.GodModeToggle and hum then
         hum.Health = hum.MaxHealth
-        if not char:FindFirstChildOfClass("ForceField") then
-            local ff = Instance.new("ForceField")
-            ff.Name = "GodModeFF"
-            ff.Visible = false
-            ff.Parent = char
-        end
-    else
-        if char:FindFirstChild("GodModeFF") then
-            char.GodModeFF:Destroy()
+    end
+
+    -- 2. Kebal Guard (Anti-Touch/Pukul)
+    if _G.GuardBypassToggle then
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("Model") and (obj:FindFirstChildOfClass("Humanoid") or obj.Name:lower():find("guard")) then
+                if obj ~= char then
+                    for _, part in pairs(obj:GetChildren()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            end
         end
     end
 
-    -- 2. Anti-Rubberband / Anti-Mental Bypass Logic
-    if hrp and (_G.WalkSpeedToggle or _G.JumpPowerToggle) then
-        -- Mencegah NetworkOwner memental akibat deteksi kecepatan mendadak
+    -- 3. Swim Speed Bypass
+    if hum and _G.SwimSpeedToggle then
+        if hum:GetState() == Enum.HumanoidStateType.Swimming then
+            hum.WalkSpeed = _G.SwimSpeedVal
+        end
+    end
+
+    -- 4. Anti-Rubberband / Network Bypass
+    if hrp and (_G.WalkSpeedToggle or _G.JumpPowerToggle or _G.SwimSpeedToggle) then
         sethiddenproperty(hrp, "NetworkIsSleeping", false)
     end
 end)
 
--- MOVEMENT LOOP (WALKSPEED & JUMPHEIGHT)
+-- MOVEMENT LOOP
 task.spawn(function()
     while true do
         pcall(function()
             local char = LocalPlayer.Character
             local hum = char and char:FindFirstChildOfClass("Humanoid")
             if hum then
-                if _G.WalkSpeedToggle then
+                if _G.WalkSpeedToggle and hum:GetState() ~= Enum.HumanoidStateType.Swimming then
                     hum.WalkSpeed = _G.WalkSpeedVal
                 end
 
