@@ -485,7 +485,7 @@ NoBtn.ZIndex = 11
 NoBtn.Parent = ConfirmFrame
 Instance.new("UICorner", NoBtn).CornerRadius = UDim.new(0, 5)
 
--- MINIMIZE & CLOSE LOGIC (LEBIH LEBAR DAN RAPI SAAT MINIMIZE)
+-- MINIMIZE & CLOSE LOGIC
 local isMinimized = false
 local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 
@@ -528,6 +528,38 @@ YesBtn.MouseButton1Click:Connect(function()
     _G.InfJump = false
     ScreenGui:Destroy()
 end)
+
+-- LOGIKA ANTI-DROP ITEM & LOCK TOOL IN HAND
+local function setupToolLock(char)
+    local rightHand = char:FindFirstChild("RightHand") or char:FindFirstChild("Right Arm")
+    if rightHand then
+        rightHand.ChildAdded:Connect(function(child)
+            if child:IsA("Weld") or child:IsA("Motor6D") or child.Name == "RightGrip" then
+                child:GetPropertyChangedSignal("Parent"):Connect(function()
+                    if not child.Parent and _G.GuardBypassToggle then
+                        task.defer(function()
+                            if char:FindFirstChildOfClass("Tool") then
+                                local tool = char:FindFirstChildOfClass("Tool")
+                                tool.Parent = LocalPlayer.Backpack
+                                local hum = char:FindFirstChildOfClass("Humanoid")
+                                if hum then hum:EquipTool(tool) end
+                            end
+                        end)
+                    end
+                end)
+            end
+        end)
+    end
+end
+
+LocalPlayer.CharacterAdded:Connect(function(char)
+    char:WaitForChild("Humanoid")
+    setupToolLock(char)
+end)
+
+if LocalPlayer.Character then
+    setupToolLock(LocalPlayer.Character)
+end
 
 -- INFINITE JUMP LOGIC
 UserInputService.JumpRequest:Connect(function()
@@ -574,7 +606,7 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- SYSTEM LOOP (GOD MODE, GUARD BYPASS, SWIM SPEED & MOVEMENT)
+-- SYSTEM LOOP (GOD MODE, GUARD BYPASS, ANTI-RAGDOLL, ANTI-KNOCKBACK & MOVEMENT)
 RunService.Stepped:Connect(function()
     local char = LocalPlayer.Character
     if not char then return end
@@ -586,8 +618,9 @@ RunService.Stepped:Connect(function()
         hum.Health = hum.MaxHealth
     end
 
-    -- 2. Kebal Guard (Anti-Touch/Pukul)
+    -- 2. Kebal Guard Complete (Anti-Touch, Anti-Ragdoll, Anti-Drop & Anti-Knockback)
     if _G.GuardBypassToggle then
+        -- A. Mematikan Tabrakan Guard
         for _, obj in pairs(workspace:GetDescendants()) do
             if obj:IsA("Model") and (obj:FindFirstChildOfClass("Humanoid") or obj.Name:lower():find("guard")) then
                 if obj ~= char then
@@ -596,6 +629,34 @@ RunService.Stepped:Connect(function()
                             part.CanCollide = false
                         end
                     end
+                end
+            end
+        end
+
+        -- B. Anti-Ragdoll (Bypass Status Jatuh/Pingsan Dipukul)
+        if hum then
+            local state = hum:GetState()
+            if state == Enum.HumanoidStateType.Ragdoll 
+            or state == Enum.HumanoidStateType.FallingDown 
+            or state == Enum.HumanoidStateType.Physics 
+            or state == Enum.HumanoidStateType.PlatformStand then
+                hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+            end
+            hum.PlatformStand = false
+        end
+
+        -- C. Anti-Knockback (Menahan Efek Mental Melayang saat Dipukul)
+        if hrp and hrp.AssemblyLinearVelocity.Magnitude > 30 then
+            hrp.AssemblyLinearVelocity = Vector3.new(0, hrp.AssemblyLinearVelocity.Y, 0)
+        end
+
+        -- D. Auto-Re-Equip jika Item Lepas Ke Tas
+        if hum then
+            local toolInHand = char:FindFirstChildOfClass("Tool")
+            if not toolInHand then
+                local backpackTool = LocalPlayer.Backpack:FindFirstChildOfClass("Tool")
+                if backpackTool then
+                    hum:EquipTool(backpackTool)
                 end
             end
         end
