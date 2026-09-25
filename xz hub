@@ -25,6 +25,7 @@ _G.GodModeToggle = false
 _G.GuardBypassToggle = false
 
 _G.InfJump = false
+_G.Noclip = false
 _G.SavedCFrame = nil
 
 -- Clean Old UI
@@ -312,6 +313,10 @@ createFeatureToggleOnly(playerContainer, "Infinite Jump", false, function(state)
     _G.InfJump = state
 end)
 
+createFeatureToggleOnly(playerContainer, "Noclip", false, function(state)
+    _G.Noclip = state
+end)
+
 local isPlayerOpen = false
 playerHeader.MouseButton1Click:Connect(function()
     isPlayerOpen = not isPlayerOpen
@@ -526,6 +531,7 @@ YesBtn.MouseButton1Click:Connect(function()
     _G.GodModeToggle = false
     _G.GuardBypassToggle = false
     _G.InfJump = false
+    _G.Noclip = false
     ScreenGui:Destroy()
 end)
 
@@ -597,6 +603,20 @@ RunService.RenderStepped:Connect(function()
         if flyBodyVelocity then flyBodyVelocity:Destroy() flyBodyVelocity = nil end
         if flyBodyGyro then flyBodyGyro:Destroy() flyBodyGyro = nil end
         if hum and not _G.FlyToggle then hum.PlatformStand = false end
+    end
+end)
+
+-- NOCLIP MECHANIC
+RunService.Stepped:Connect(function()
+    if _G.Noclip then
+        local char = LocalPlayer.Character
+        if char then
+            for _, child in pairs(char:GetDescendants()) do
+                if child:IsA("BasePart") and child.CanCollide then
+                    child.CanCollide = false
+                end
+            end
+        end
     end
 end)
 
