@@ -1,6 +1,6 @@
 -- ============================================
 -- EXZET HUB - BETA VERSION (VIBE CODING EDITION)
--- Updated: Custom Resizer, Cleaned GodMode, Dynamic Multi-Select Rarity
+-- Fixed Auto Dig, Persistent Rarity Toggle, & Responsive Fill UI
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -88,7 +88,7 @@ Header.Parent = MainFrame
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -70, 1, 0)
 Title.Position = UDim2.new(0, 12, 0, 0)
-Title.Text = "Exzet Hub - Semi Auto Farm"
+Title.Text = "Exzet Hub - Beta Version 1111"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 13
@@ -145,24 +145,24 @@ TabInfoBtn.TextSize = 11
 TabInfoBtn.Parent = TabBar
 Instance.new("UICorner", TabInfoBtn).CornerRadius = UDim.new(0, 6)
 
--- Content Frames
+-- Content Frames (Fully Responsive Size)
 local MainContent = Instance.new("ScrollingFrame")
-MainContent.Size = UDim2.new(1, -20, 1, -72)
+MainContent.Size = UDim2.new(1, -20, 1, -75)
 MainContent.Position = UDim2.new(0, 10, 0, 68)
 MainContent.BackgroundTransparency = 1
 MainContent.CanvasSize = UDim2.new(0, 0, 0, 0)
 MainContent.AutomaticCanvasSize = Enum.AutomaticSize.Y
-MainContent.ScrollBarThickness = 2
+MainContent.ScrollBarThickness = 3
 MainContent.ScrollBarImageColor3 = Color3.fromRGB(220, 30, 30)
 MainContent.Parent = MainFrame
 
 local InfoContent = Instance.new("ScrollingFrame")
-InfoContent.Size = UDim2.new(1, -20, 1, -72)
+InfoContent.Size = UDim2.new(1, -20, 1, -75)
 InfoContent.Position = UDim2.new(0, 10, 0, 68)
 InfoContent.BackgroundTransparency = 1
 InfoContent.CanvasSize = UDim2.new(0, 0, 0, 0)
 InfoContent.AutomaticCanvasSize = Enum.AutomaticSize.Y
-InfoContent.ScrollBarThickness = 2
+InfoContent.ScrollBarThickness = 3
 InfoContent.ScrollBarImageColor3 = Color3.fromRGB(220, 30, 30)
 InfoContent.Visible = false
 InfoContent.Parent = MainFrame
@@ -195,6 +195,7 @@ local function createSwitch(parent, defaultState, onToggle)
     switchBg.Size = UDim2.new(0, 38, 0, 20)
     switchBg.Position = UDim2.new(1, -45, 0.5, -10)
     switchBg.BackgroundColor3 = defaultState and Color3.fromRGB(50, 200, 50) or Color3.fromRGB(80, 80, 85)
+    switchBg.ZIndex = 5
     switchBg.Parent = parent
     Instance.new("UICorner", switchBg).CornerRadius = UDim.new(1, 0)
 
@@ -202,6 +203,7 @@ local function createSwitch(parent, defaultState, onToggle)
     circle.Size = UDim2.new(0, 16, 0, 16)
     circle.Position = defaultState and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)
     circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    circle.ZIndex = 6
     circle.Parent = switchBg
     Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
 
@@ -209,6 +211,7 @@ local function createSwitch(parent, defaultState, onToggle)
     btn.Size = UDim2.new(1, 0, 1, 0)
     btn.BackgroundTransparency = 1
     btn.Text = ""
+    btn.ZIndex = 7
     btn.Parent = switchBg
 
     local state = defaultState
@@ -326,7 +329,7 @@ local function createDropdownGroup(parentTarget, groupTitle)
     return container
 end
 
--- Helper: Custom Dropdown Select By Rarity (Dengan Toggle di kanan)
+-- Helper: Custom Dropdown Select By Rarity (Toggle Tetap Muncul & Terlihat)
 local function createRarityDropdownGroup(parentTarget, groupTitle, defaultToggleState, onToggleChanged)
     local group = Instance.new("Frame")
     group.Size = UDim2.new(1, 0, 0, 36)
@@ -335,18 +338,23 @@ local function createRarityDropdownGroup(parentTarget, groupTitle, defaultToggle
     group.Parent = parentTarget
     Instance.new("UICorner", group).CornerRadius = UDim.new(0, 6)
 
-    local header = Instance.new("TextButton")
-    header.Size = UDim2.new(1, -55, 0, 36)
-    header.BackgroundTransparency = 1
-    header.Text = "  " .. groupTitle .. "  ▼"
-    header.TextColor3 = Color3.fromRGB(255, 255, 255)
-    header.Font = Enum.Font.GothamBold
-    header.TextSize = 12
-    header.TextXAlignment = Enum.TextXAlignment.Left
-    header.Parent = group
+    local headerFrame = Instance.new("Frame")
+    headerFrame.Size = UDim2.new(1, 0, 0, 36)
+    headerFrame.BackgroundTransparency = 1
+    headerFrame.Parent = group
 
-    -- Switch On/Off di samping kanan header
-    createSwitch(group, defaultToggleState, onToggleChanged)
+    local headerBtn = Instance.new("TextButton")
+    headerBtn.Size = UDim2.new(1, -55, 1, 0)
+    headerBtn.BackgroundTransparency = 1
+    headerBtn.Text = "  " .. groupTitle .. "  ▼"
+    headerBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    headerBtn.Font = Enum.Font.GothamBold
+    headerBtn.TextSize = 12
+    headerBtn.TextXAlignment = Enum.TextXAlignment.Left
+    headerBtn.Parent = headerFrame
+
+    -- Switch On/Off Utama
+    createSwitch(headerFrame, defaultToggleState, onToggleChanged)
 
     local container = Instance.new("Frame")
     container.Size = UDim2.new(1, -16, 0, 0)
@@ -362,20 +370,19 @@ local function createRarityDropdownGroup(parentTarget, groupTitle, defaultToggle
     local function updateGroupHeight()
         if isOpen then
             local rows = math.ceil(#RarityList / 2)
-            local targetHeight = 38 + (rows * 32) + 6
+            local targetHeight = 38 + (rows * 32) + 8
             TweenService:Create(group, TweenInfo.new(0.25), {Size = UDim2.new(1, 0, 0, targetHeight)}):Play()
         else
             TweenService:Create(group, TweenInfo.new(0.25), {Size = UDim2.new(1, 0, 0, 36)}):Play()
         end
     end
 
-    header.MouseButton1Click:Connect(function()
+    headerBtn.MouseButton1Click:Connect(function()
         isOpen = not isOpen
-        header.Text = isOpen and ("  " .. groupTitle .. "  ▲") or ("  " .. groupTitle .. "  ▼")
+        headerBtn.Text = isOpen and ("  " .. groupTitle .. "  ▲") or ("  " .. groupTitle .. "  ▼")
         updateGroupHeight()
     end)
 
-    -- Item Buttons dalam Dropdown
     for _, rName in ipairs(RarityList) do
         local rBtn = Instance.new("TextButton")
         rBtn.Text = rName
@@ -388,10 +395,10 @@ local function createRarityDropdownGroup(parentTarget, groupTitle, defaultToggle
 
         local function updateVisual()
             if isSelected then
-                rBtn.BackgroundColor3 = Color3.fromRGB(220, 220, 220) -- Putih Cerah (Terpilih)
+                rBtn.BackgroundColor3 = Color3.fromRGB(220, 220, 220) -- Putih Cerah
                 rBtn.TextColor3 = Color3.fromRGB(15, 15, 15)
             else
-                rBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 45) -- Abu-abu Mati (Tidak Terpilih)
+                rBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 45) -- Abu-abu Mati
                 rBtn.TextColor3 = Color3.fromRGB(120, 120, 125)
             end
         end
@@ -436,8 +443,8 @@ end)
 UserInputService.InputChanged:Connect(function(input)
     if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         local delta = input.Position - resizeStart
-        local newWidth = math.max( startSize.X.Offset + delta.X, 320 )
-        local newHeight = math.max( startSize.Y.Offset + delta.Y, 220 )
+        local newWidth = math.max(startSize.X.Offset + delta.X, 320)
+        local newHeight = math.max(startSize.Y.Offset + delta.Y, 220)
         MainFrame.Size = UDim2.new(0, newWidth, 0, newHeight)
     end
 end)
@@ -451,11 +458,20 @@ end)
 -- ============================================
 -- SECTION 4: AUTO FARM GEMS LOGIC & HELPERS
 -- ============================================
+local function isHoldingTool()
+    local char = LocalPlayer.Character
+    if char then
+        local currentTool = char:FindFirstChildWhichIsA("Tool")
+        return currentTool ~= nil
+    end
+    return false
+end
+
 local function autoEquipPickaxe()
     local char = LocalPlayer.Character
     local backpack = LocalPlayer:FindFirstChild("Backpack")
     
-    if char and not char:FindFirstChildWhichIsA("Tool") then
+    if char and not isHoldingTool() then
         if backpack then
             local tool = backpack:FindFirstChildWhichIsA("Tool")
             if tool then tool.Parent = char end
@@ -485,43 +501,35 @@ local function getItemRarity(item)
     return "Unknown"
 end
 
--- Thread 1: Auto Dig Mobile
+-- Thread Auto Dig yang Diperbarui
 task.spawn(function()
     while true do
         if _G.AutoDigMobile then
             pcall(function()
+                -- 1. Coba auto-equip dari backpack kalau tangan lagi kosong
                 autoEquipPickaxe()
                 
-                local char = LocalPlayer.Character
-                if char then
-                    local tool = char:FindFirstChildWhichIsA("Tool")
-                    if tool then tool:Activate() end
-                end
-                
-                pcall(function()
-                    ContextActionService:CallFunction("Dig", Enum.UserInputState.Begin, nil)
-                    task.wait(0.02)
-                    ContextActionService:CallFunction("Dig", Enum.UserInputState.End, nil)
-                end)
-                pcall(function()
-                    ContextActionService:CallFunction("dig", Enum.UserInputState.Begin, nil)
-                    task.wait(0.02)
-                    ContextActionService:CallFunction("dig", Enum.UserInputState.End, nil)
-                end)
-                
-                local pGui = LocalPlayer:FindFirstChild("PlayerGui")
-                if pGui then
-                    for _, v in pairs(pGui:GetDescendants()) do
-                        if (v:IsA("TextButton") or v:IsA("ImageButton")) and v.Visible then
-                            local btnName = v.Name:upper()
-                            local textChild = v:FindFirstChildWhichIsA("TextLabel")
-                            local hasDigText = textChild and textChild.Text:upper():find("DIG")
-                            
-                            if btnName:find("DIG") or hasDigText then
-                                for _, conn in pairs(getconnections(v.Activated)) do conn:Fire() end
-                            end
-                        end
+                -- 2. HANYA jalankan fungsi gali/swing JIKA karakter BENAR-BENAR sedang memegang Tool
+                if isHoldingTool() then
+                    local char = LocalPlayer.Character
+                    local tool = char and char:FindFirstChildWhichIsA("Tool")
+                    
+                    -- Swing Tool yang dipegang
+                    if tool then
+                        tool:Activate()
                     end
+                    
+                    -- Memicu fungsi ContextActionService Dig
+                    pcall(function()
+                        ContextActionService:CallFunction("Dig", Enum.UserInputState.Begin, nil)
+                        task.wait(0.02)
+                        ContextActionService:CallFunction("Dig", Enum.UserInputState.End, nil)
+                    end)
+                    pcall(function()
+                        ContextActionService:CallFunction("dig", Enum.UserInputState.Begin, nil)
+                        task.wait(0.02)
+                        ContextActionService:CallFunction("dig", Enum.UserInputState.End, nil)
+                    end)
                 end
             end)
         end
@@ -529,7 +537,7 @@ task.spawn(function()
     end
 end)
 
--- Thread 2: Auto Pick Up Gems
+-- Thread Auto Pick Up Gems
 task.spawn(function()
     while true do
         if _G.AutoPickMobile then
