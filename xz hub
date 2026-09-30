@@ -1,14 +1,20 @@
 -- ============================================
 -- EXZET HUB - BETA VERSION (VIBE CODING EDITION)
+-- Integrated Auto Farm Gems Module
 -- ============================================
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local ContextActionService = game:GetService("ContextActionService")
+
 local LocalPlayer = Players.LocalPlayer
 
--- Global States
+-- ============================================
+-- SECTION 1: GLOBAL CONFIG & STATES
+-- ============================================
 _G.WalkSpeedToggle = false
 _G.WalkSpeedVal = 50
 
@@ -28,22 +34,40 @@ _G.InfJump = false
 _G.Noclip = false
 _G.SavedCFrame = nil
 
+-- States Auto Farm Gems (Hasil Integrasi)
+_G.AutoDigMobile = false
+_G.AutoPickMobile = false
+
+_G.SelectedRarities = {
+    ["Common"] = false,
+    ["Uncommon"] = false,
+    ["Rare"] = false,
+    ["Epic"] = false,
+    ["Legendary"] = true,
+    ["Mythic"] = true,
+    ["Exotic"] = true,
+    ["Zenith"] = true
+}
+
+local RarityList = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Exotic", "Zenith"}
+
 -- Clean Old UI
 local ParentGui = LocalPlayer:WaitForChild("PlayerGui")
 if ParentGui:FindFirstChild("ExzetFinalHub") then
     ParentGui.ExzetFinalHub:Destroy()
 end
 
--- 1. MAIN SCREEN GUI
+-- ============================================
+-- SECTION 2: UI BASE CREATION & HELPERS
+-- ============================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "ExzetFinalHub"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = ParentGui
 
--- 2. MAIN FRAME
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 480, 0, 280)
-MainFrame.Position = UDim2.new(0.5, -240, 0.35, -140)
+MainFrame.Size = UDim2.new(0, 480, 0, 320)
+MainFrame.Position = UDim2.new(0.5, -240, 0.35, -160)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 5, 5)
 MainFrame.BackgroundTransparency = 0.15
 MainFrame.Active = true
@@ -58,7 +82,7 @@ local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Color = Color3.fromRGB(220, 30, 30)
 MainStroke.Thickness = 1.5
 
--- 3. HEADER BAR
+-- Header Bar
 local Header = Instance.new("Frame")
 Header.Size = UDim2.new(1, 0, 0, 35)
 Header.BackgroundTransparency = 1
@@ -95,7 +119,7 @@ CloseBtn.Font = Enum.Font.GothamBold
 CloseBtn.Parent = Header
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 5)
 
--- TAB NAVIGATION BAR
+-- Tab Bar
 local TabBar = Instance.new("Frame")
 TabBar.Size = UDim2.new(1, -20, 0, 28)
 TabBar.Position = UDim2.new(0, 10, 0, 35)
@@ -124,7 +148,7 @@ TabInfoBtn.TextSize = 11
 TabInfoBtn.Parent = TabBar
 Instance.new("UICorner", TabInfoBtn).CornerRadius = UDim.new(0, 6)
 
--- CONTAINERS
+-- Content Frames
 local MainContent = Instance.new("ScrollingFrame")
 MainContent.Size = UDim2.new(1, -20, 1, -72)
 MainContent.Position = UDim2.new(0, 10, 0, 68)
@@ -149,7 +173,7 @@ InfoContent.Parent = MainFrame
 local UIList = Instance.new("UIListLayout", MainContent)
 UIList.Padding = UDim.new(0, 6)
 
--- TAB SWITCHING
+-- Tab Switch Events
 TabMainBtn.MouseButton1Click:Connect(function()
     MainContent.Visible = true
     InfoContent.Visible = false
@@ -168,7 +192,7 @@ TabInfoBtn.MouseButton1Click:Connect(function()
     TabMainBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
 end)
 
--- HELPER: SWITCH TOGGLE
+-- Helper UI Functions
 local function createSwitch(parent, defaultState, onToggle)
     local switchBg = Instance.new("Frame")
     switchBg.Size = UDim2.new(0, 38, 0, 20)
@@ -205,7 +229,6 @@ local function createSwitch(parent, defaultState, onToggle)
     end)
 end
 
--- HELPER: INPUT + TOGGLE FEATURE
 local function createFeatureWithInput(parentTarget, titleText, defaultVal, onInputChanged, onToggleChanged)
     local container = Instance.new("Frame")
     container.Size = UDim2.new(1, 0, 0, 34)
@@ -243,7 +266,6 @@ local function createFeatureWithInput(parentTarget, titleText, defaultVal, onInp
     createSwitch(container, false, onToggleChanged)
 end
 
--- HELPER: TOGGLE ONLY FEATURE
 local function createFeatureToggleOnly(parentTarget, titleText, defaultState, onToggleChanged)
     local container = Instance.new("Frame")
     container.Size = UDim2.new(1, 0, 0, 34)
@@ -266,32 +288,356 @@ local function createFeatureToggleOnly(parentTarget, titleText, defaultState, on
     createSwitch(container, defaultState, onToggleChanged)
 end
 
+local function createDropdownGroup(parentTarget, groupTitle)
+    local group = Instance.new("Frame")
+    group.Size = UDim2.new(1, 0, 0, 36)
+    group.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
+    group.ClipsDescendants = true
+    group.Parent = parentTarget
+    Instance.new("UICorner", group).CornerRadius = UDim.new(0, 6)
+
+    local header = Instance.new("TextButton")
+    header.Size = UDim2.new(1, 0, 0, 36)
+    header.BackgroundTransparency = 1
+    header.Text = "  " .. groupTitle .. "  ▼"
+    header.TextColor3 = Color3.fromRGB(255, 255, 255)
+    header.Font = Enum.Font.GothamBold
+    header.TextSize = 12
+    header.TextXAlignment = Enum.TextXAlignment.Left
+    header.Parent = group
+
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, -16, 0, 0)
+    container.Position = UDim2.new(0, 8, 0, 38)
+    container.BackgroundTransparency = 1
+    container.Parent = group
+
+    local listLayout = Instance.new("UIListLayout", container)
+    listLayout.Padding = UDim.new(0, 4)
+
+    local isOpen = false
+    header.MouseButton1Click:Connect(function()
+        isOpen = not isOpen
+        header.Text = isOpen and ("  " .. groupTitle .. "  ▲") or ("  " .. groupTitle .. "  ▼")
+        local targetHeight = isOpen and (38 + listLayout.AbsoluteContentSize.Y + 8) or 36
+        TweenService:Create(group, TweenInfo.new(0.25), {Size = UDim2.new(1, 0, 0, targetHeight)}):Play()
+    end)
+
+    return container
+end
+
+-- ============================================
+-- SECTION 3: AUTO FARM GEMS LOGIC & HELPERS
+-- ============================================
+local function autoEquipPickaxe()
+    local char = LocalPlayer.Character
+    local backpack = LocalPlayer:FindFirstChild("Backpack")
+    
+    if char and not char:FindFirstChildWhichIsA("Tool") then
+        if backpack then
+            local tool = backpack:FindFirstChildWhichIsA("Tool")
+            if tool then
+                tool.Parent = char
+            end
+        end
+    end
+end
+
+local function getItemRarity(item)
+    local rarityVal = item:FindFirstChild("Rarity")
+    if rarityVal and rarityVal:IsA("StringValue") then
+        return rarityVal.Value
+    end
+
+    for _, label in pairs(item:GetDescendants()) do
+        if label:IsA("TextLabel") and label.Text ~= "" then
+            local txt = label.Text:lower()
+            for _, rName in ipairs(RarityList) do
+                if txt == rName:lower() or txt:find(rName:lower()) then
+                    if not txt:find("zone") then
+                        return rName
+                    end
+                end
+            end
+        end
+    end
+
+    return "Unknown"
+end
+
+-- Thread 1: Auto Dig Mobile
+task.spawn(function()
+    while true do
+        if _G.AutoDigMobile then
+            pcall(function()
+                autoEquipPickaxe()
+                
+                local char = LocalPlayer.Character
+                if char then
+                    local tool = char:FindFirstChildWhichIsA("Tool")
+                    if tool then
+                        tool:Activate()
+                    end
+                end
+                
+                pcall(function()
+                    ContextActionService:CallFunction("Dig", Enum.UserInputState.Begin, nil)
+                    task.wait(0.02)
+                    ContextActionService:CallFunction("Dig", Enum.UserInputState.End, nil)
+                end)
+                pcall(function()
+                    ContextActionService:CallFunction("dig", Enum.UserInputState.Begin, nil)
+                    task.wait(0.02)
+                    ContextActionService:CallFunction("dig", Enum.UserInputState.End, nil)
+                end)
+                
+                local pGui = LocalPlayer:FindFirstChild("PlayerGui")
+                if pGui then
+                    for _, v in pairs(pGui:GetDescendants()) do
+                        if (v:IsA("TextButton") or v:IsA("ImageButton")) and v.Visible then
+                            local btnName = v.Name:upper()
+                            local textChild = v:FindFirstChildWhichIsA("TextLabel")
+                            local hasDigText = textChild and textChild.Text:upper():find("DIG")
+                            
+                            if btnName:find("DIG") or hasDigText then
+                                for _, conn in pairs(getconnections(v.Activated)) do conn:Fire() end
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+        task.wait(0.12)
+    end
+end)
+
+-- Thread 2: Auto Pick Up Gems
+task.spawn(function()
+    while true do
+        if _G.AutoPickMobile then
+            pcall(function()
+                local spawnedGems = Workspace:FindFirstChild("SpawnedGems")
+                local char = LocalPlayer.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                
+                if hrp and spawnedGems then
+                    for _, item in pairs(spawnedGems:GetChildren()) do
+                        if not _G.AutoPickMobile then break end
+                        
+                        local targetPart = item:IsA("BasePart") and item or item:FindFirstChildWhichIsA("BasePart")
+                        if targetPart then
+                            local dist = (hrp.Position - targetPart.Position).Magnitude
+                            if dist <= 20 then
+                                local rarity = getItemRarity(item)
+                                
+                                if _G.SelectedRarities[rarity] then
+                                    local prompt = item:FindFirstChildWhichIsA("ProximityPrompt", true)
+                                    if prompt then
+                                        prompt.HoldDuration = 0
+                                        fireproximityprompt(prompt)
+                                    end
+                                    
+                                    local pGui = LocalPlayer:FindFirstChild("PlayerGui")
+                                    if pGui then
+                                        for _, btn in pairs(pGui:GetDescendants()) do
+                                            if (btn:IsA("TextButton") or btn:IsA("ImageButton")) and btn.Visible then
+                                                if btn.Name:upper():find("PICK") or btn.Name:upper():find("CLAIM") then
+                                                    for _, conn in pairs(getconnections(btn.Activated)) do conn:Fire() end
+                                                end
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+        task.wait(0.15)
+    end
+end)
+
+-- ============================================
+-- SECTION 4: EXZET HUB CORE LOGIC LOOPS
+-- ============================================
+
+-- Anti-Drop & Tool Tracker
+local function trackTool(char)
+    char.ChildRemoved:Connect(function(child)
+        if child:IsA("Tool") and _G.GuardBypassToggle then
+            task.defer(function()
+                if child.Parent == workspace or child.Parent == LocalPlayer.Backpack then
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if hum then
+                        child.Parent = LocalPlayer.Backpack
+                        hum:EquipTool(child)
+                    end
+                end
+            end)
+        end
+    end)
+end
+
+LocalPlayer.CharacterAdded:Connect(function(char)
+    char:WaitForChild("Humanoid")
+    trackTool(char)
+end)
+
+if LocalPlayer.Character then
+    trackTool(LocalPlayer.Character)
+end
+
+-- Infinite Jump
+UserInputService.JumpRequest:Connect(function()
+    if _G.InfJump then
+        local char = LocalPlayer.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
+    end
+end)
+
+-- Fly Mechanic
+local flyBodyVelocity, flyBodyGyro
+RunService.RenderStepped:Connect(function()
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+    if _G.FlyToggle and hrp and hum then
+        if not flyBodyVelocity then
+            flyBodyVelocity = Instance.new("BodyVelocity")
+            flyBodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
+            flyBodyVelocity.Parent = hrp
+
+            flyBodyGyro = Instance.new("BodyGyro")
+            flyBodyGyro.MaxTorque = Vector3.new(1e6, 1e6, 1e6)
+            flyBodyGyro.P = 9000
+            flyBodyGyro.Parent = hrp
+        end
+
+        hum.PlatformStand = true
+        local cam = workspace.CurrentCamera
+        flyBodyGyro.CFrame = cam.CFrame
+
+        local moveDir = hum.MoveDirection
+        if moveDir.Magnitude > 0 then
+            flyBodyVelocity.Velocity = cam.CFrame.LookVector * (moveDir.Magnitude * _G.FlySpeed)
+        else
+            flyBodyVelocity.Velocity = Vector3.zero
+        end
+    else
+        if flyBodyVelocity then flyBodyVelocity:Destroy() flyBodyVelocity = nil end
+        if flyBodyGyro then flyBodyGyro:Destroy() flyBodyGyro = nil end
+        if hum and not _G.FlyToggle then hum.PlatformStand = false end
+    end
+end)
+
+-- Noclip
+RunService.Stepped:Connect(function()
+    if _G.Noclip then
+        local char = LocalPlayer.Character
+        if char then
+            for _, child in pairs(char:GetDescendants()) do
+                if child:IsA("BasePart") and child.CanCollide then
+                    child.CanCollide = false
+                end
+            end
+        end
+    end
+end)
+
+-- System Loop (God Mode, Bypass, Swim, Anti-Rubberband)
+RunService.Stepped:Connect(function()
+    local char = LocalPlayer.Character
+    if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+
+    if _G.GodModeToggle and hum then
+        hum.Health = hum.MaxHealth
+    end
+
+    if _G.GuardBypassToggle then
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("Model") and (obj:FindFirstChildOfClass("Humanoid") or obj.Name:lower():find("guard")) then
+                if obj ~= char then
+                    for _, part in pairs(obj:GetChildren()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
+                    end
+                end
+            end
+        end
+
+        if hum then
+            local state = hum:GetState()
+            if state == Enum.HumanoidStateType.Ragdoll 
+            or state == Enum.HumanoidStateType.FallingDown 
+            or state == Enum.HumanoidStateType.Physics 
+            or state == Enum.HumanoidStateType.PlatformStand then
+                hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+            end
+            hum.PlatformStand = false
+        end
+
+        if hrp and hrp.AssemblyLinearVelocity.Magnitude > 25 then
+            hrp.AssemblyLinearVelocity = Vector3.new(0, hrp.AssemblyLinearVelocity.Y, 0)
+        end
+
+        local heldTool = char:FindFirstChildOfClass("Tool")
+        if not heldTool then
+            local backpackTool = LocalPlayer.Backpack:FindFirstChildOfClass("Tool")
+            if backpackTool and hum then
+                hum:EquipTool(backpackTool)
+            end
+        else
+            local handle = heldTool:FindFirstChild("Handle")
+            if handle and handle:IsA("BasePart") then
+                handle.CanCollide = false
+            end
+        end
+    end
+
+    if hum and _G.SwimSpeedToggle then
+        if hum:GetState() == Enum.HumanoidStateType.Swimming then
+            hum.WalkSpeed = _G.SwimSpeedVal
+        end
+    end
+
+    if hrp and (_G.WalkSpeedToggle or _G.JumpPowerToggle or _G.SwimSpeedToggle) then
+        sethiddenproperty(hrp, "NetworkIsSleeping", false)
+    end
+end)
+
+-- Movement Loop
+task.spawn(function()
+    while true do
+        pcall(function()
+            local char = LocalPlayer.Character
+            local hum = char and char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                if _G.WalkSpeedToggle and hum:GetState() ~= Enum.HumanoidStateType.Swimming then
+                    hum.WalkSpeed = _G.WalkSpeedVal
+                end
+
+                if _G.JumpPowerToggle then
+                    hum.UseJumpPower = true
+                    hum.JumpPower = _G.JumpPowerVal
+                end
+            end
+        end)
+        task.wait(0.1)
+    end
+end)
+
+-- ============================================
+-- SECTION 5: UI CATEGORY BUILDER
+-- ============================================
+
 -- 1. DROPDOWN GROUP: PLAYER
-local playerGroup = Instance.new("Frame")
-playerGroup.Size = UDim2.new(1, 0, 0, 36)
-playerGroup.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
-playerGroup.ClipsDescendants = true
-playerGroup.Parent = MainContent
-Instance.new("UICorner", playerGroup).CornerRadius = UDim.new(0, 6)
-
-local playerHeader = Instance.new("TextButton")
-playerHeader.Size = UDim2.new(1, 0, 0, 36)
-playerHeader.BackgroundTransparency = 1
-playerHeader.Text = "  Player  ▼"
-playerHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
-playerHeader.Font = Enum.Font.GothamBold
-playerHeader.TextSize = 12
-playerHeader.TextXAlignment = Enum.TextXAlignment.Left
-playerHeader.Parent = playerGroup
-
-local playerContainer = Instance.new("Frame")
-playerContainer.Size = UDim2.new(1, -16, 0, 0)
-playerContainer.Position = UDim2.new(0, 8, 0, 38)
-playerContainer.BackgroundTransparency = 1
-playerContainer.Parent = playerGroup
-
-local pList = Instance.new("UIListLayout", playerContainer)
-pList.Padding = UDim.new(0, 4)
+local playerContainer = createDropdownGroup(MainContent, "Player")
 
 createFeatureWithInput(playerContainer, "WalkSpeed", 50, function(val)
     local num = tonumber(val) if num then _G.WalkSpeedVal = num end
@@ -317,40 +663,8 @@ createFeatureToggleOnly(playerContainer, "Noclip", false, function(state)
     _G.Noclip = state
 end)
 
-local isPlayerOpen = false
-playerHeader.MouseButton1Click:Connect(function()
-    isPlayerOpen = not isPlayerOpen
-    playerHeader.Text = isPlayerOpen and "  Player  ▲" or "  Player  ▼"
-    local targetHeight = isPlayerOpen and (38 + pList.AbsoluteContentSize.Y + 8) or 36
-    TweenService:Create(playerGroup, TweenInfo.new(0.25), {Size = UDim2.new(1, 0, 0, targetHeight)}):Play()
-end)
-
 -- 2. DROPDOWN GROUP: GOD MODE
-local godGroup = Instance.new("Frame")
-godGroup.Size = UDim2.new(1, 0, 0, 36)
-godGroup.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
-godGroup.ClipsDescendants = true
-godGroup.Parent = MainContent
-Instance.new("UICorner", godGroup).CornerRadius = UDim.new(0, 6)
-
-local godHeader = Instance.new("TextButton")
-godHeader.Size = UDim2.new(1, 0, 0, 36)
-godHeader.BackgroundTransparency = 1
-godHeader.Text = "  God Mode  ▼"
-godHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
-godHeader.Font = Enum.Font.GothamBold
-godHeader.TextSize = 12
-godHeader.TextXAlignment = Enum.TextXAlignment.Left
-godHeader.Parent = godGroup
-
-local godContainer = Instance.new("Frame")
-godContainer.Size = UDim2.new(1, -16, 0, 0)
-godContainer.Position = UDim2.new(0, 8, 0, 38)
-godContainer.BackgroundTransparency = 1
-godContainer.Parent = godGroup
-
-local gList = Instance.new("UIListLayout", godContainer)
-gList.Padding = UDim.new(0, 4)
+local godContainer = createDropdownGroup(MainContent, "God Mode")
 
 createFeatureToggleOnly(godContainer, "Kebal Tembakan (Health Lock)", false, function(state)
     _G.GodModeToggle = state
@@ -360,15 +674,24 @@ createFeatureToggleOnly(godContainer, "Kebal Guard (Anti-Touch/Pukul)", false, f
     _G.GuardBypassToggle = state
 end)
 
-local isGodOpen = false
-godHeader.MouseButton1Click:Connect(function()
-    isGodOpen = not isGodOpen
-    godHeader.Text = isGodOpen and "  God Mode  ▲" or "  God Mode  ▼"
-    local targetHeight = isGodOpen and (38 + gList.AbsoluteContentSize.Y + 8) or 36
-    TweenService:Create(godGroup, TweenInfo.new(0.25), {Size = UDim2.new(1, 0, 0, targetHeight)}):Play()
+-- 3. DROPDOWN GROUP: AUTO FARM GEMS (FITUR BARU BARUSAN)
+local farmContainer = createDropdownGroup(MainContent, "Auto Farm Gems")
+
+createFeatureToggleOnly(farmContainer, "Auto Dig (Smooth Mobile)", false, function(state)
+    _G.AutoDigMobile = state
 end)
 
--- 3. KATEGORI: TELEPORT
+createFeatureToggleOnly(farmContainer, "Auto Pick Items (By Rarity)", false, function(state)
+    _G.AutoPickMobile = state
+end)
+
+for _, rName in ipairs(RarityList) do
+    createFeatureToggleOnly(farmContainer, "Filter: Pick " .. rName, _G.SelectedRarities[rName] or false, function(state)
+        _G.SelectedRarities[rName] = state
+    end)
+end
+
+-- 4. KATEGORI: TELEPORT
 local tpGroup = Instance.new("Frame")
 tpGroup.Size = UDim2.new(1, 0, 0, 75)
 tpGroup.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
@@ -505,7 +828,7 @@ MinBtn.MouseButton1Click:Connect(function()
         TweenService:Create(FrameCorner, tweenInfo, {CornerRadius = UDim.new(0, 8)}):Play()
     else
         MinBtn.Text = "-"
-        local tween = TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 480, 0, 280)})
+        local tween = TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 480, 0, 320)})
         TweenService:Create(FrameCorner, tweenInfo, {CornerRadius = UDim.new(0, 10)}):Play()
         tween:Play()
         tween.Completed:Connect(function()
@@ -532,183 +855,7 @@ YesBtn.MouseButton1Click:Connect(function()
     _G.GuardBypassToggle = false
     _G.InfJump = false
     _G.Noclip = false
+    _G.AutoDigMobile = false
+    _G.AutoPickMobile = false
     ScreenGui:Destroy()
-end)
-
--- ADVANCED ANTI-DROP ITEM & TOOL TRACKER
-local function trackTool(char)
-    char.ChildRemoved:Connect(function(child)
-        if child:IsA("Tool") and _G.GuardBypassToggle then
-            task.defer(function()
-                if child.Parent == workspace or child.Parent == LocalPlayer.Backpack then
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    if hum then
-                        child.Parent = LocalPlayer.Backpack
-                        hum:EquipTool(child)
-                    end
-                end
-            end)
-        end
-    end)
-end
-
-LocalPlayer.CharacterAdded:Connect(function(char)
-    char:WaitForChild("Humanoid")
-    trackTool(char)
-end)
-
-if LocalPlayer.Character then
-    trackTool(LocalPlayer.Character)
-end
-
--- INFINITE JUMP LOGIC
-UserInputService.JumpRequest:Connect(function()
-    if _G.InfJump then
-        local char = LocalPlayer.Character
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
-    end
-end)
-
--- REAL FLY MECHANIC
-local flyBodyVelocity, flyBodyGyro
-RunService.RenderStepped:Connect(function()
-    local char = LocalPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-
-    if _G.FlyToggle and hrp and hum then
-        if not flyBodyVelocity then
-            flyBodyVelocity = Instance.new("BodyVelocity")
-            flyBodyVelocity.MaxForce = Vector3.new(1e6, 1e6, 1e6)
-            flyBodyVelocity.Parent = hrp
-
-            flyBodyGyro = Instance.new("BodyGyro")
-            flyBodyGyro.MaxTorque = Vector3.new(1e6, 1e6, 1e6)
-            flyBodyGyro.P = 9000
-            flyBodyGyro.Parent = hrp
-        end
-
-        hum.PlatformStand = true
-        local cam = workspace.CurrentCamera
-        flyBodyGyro.CFrame = cam.CFrame
-
-        local moveDir = hum.MoveDirection
-        if moveDir.Magnitude > 0 then
-            flyBodyVelocity.Velocity = cam.CFrame.LookVector * (moveDir.Magnitude * _G.FlySpeed)
-        else
-            flyBodyVelocity.Velocity = Vector3.zero
-        end
-    else
-        if flyBodyVelocity then flyBodyVelocity:Destroy() flyBodyVelocity = nil end
-        if flyBodyGyro then flyBodyGyro:Destroy() flyBodyGyro = nil end
-        if hum and not _G.FlyToggle then hum.PlatformStand = false end
-    end
-end)
-
--- NOCLIP MECHANIC
-RunService.Stepped:Connect(function()
-    if _G.Noclip then
-        local char = LocalPlayer.Character
-        if char then
-            for _, child in pairs(char:GetDescendants()) do
-                if child:IsA("BasePart") and child.CanCollide then
-                    child.CanCollide = false
-                end
-            end
-        end
-    end
-end)
-
--- SYSTEM LOOP (GOD MODE, GUARD BYPASS, ANTI-RAGDOLL, ANTI-KNOCKBACK & MOVEMENT)
-RunService.Stepped:Connect(function()
-    local char = LocalPlayer.Character
-    if not char then return end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-
-    -- 1. Kebal Tembakan (Health Lock)
-    if _G.GodModeToggle and hum then
-        hum.Health = hum.MaxHealth
-    end
-
-    -- 2. Kebal Guard Complete (Anti-Touch, Anti-Ragdoll, Anti-Drop & Anti-Knockback)
-    if _G.GuardBypassToggle then
-        -- A. Mematikan Tabrakan Part Guard
-        for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:IsA("Model") and (obj:FindFirstChildOfClass("Humanoid") or obj.Name:lower():find("guard")) then
-                if obj ~= char then
-                    for _, part in pairs(obj:GetChildren()) do
-                        if part:IsA("BasePart") then
-                            part.CanCollide = false
-                        end
-                    end
-                end
-            end
-        end
-
-        -- B. Anti-Ragdoll (Bypass Status Jatuh/Pingsan Dipukul)
-        if hum then
-            local state = hum:GetState()
-            if state == Enum.HumanoidStateType.Ragdoll 
-            or state == Enum.HumanoidStateType.FallingDown 
-            or state == Enum.HumanoidStateType.Physics 
-            or state == Enum.HumanoidStateType.PlatformStand then
-                hum:ChangeState(Enum.HumanoidStateType.GettingUp)
-            end
-            hum.PlatformStand = false
-        end
-
-        -- C. Anti-Knockback (Menahan Efek Mental Melayang saat Dipukul)
-        if hrp and hrp.AssemblyLinearVelocity.Magnitude > 25 then
-            hrp.AssemblyLinearVelocity = Vector3.new(0, hrp.AssemblyLinearVelocity.Y, 0)
-        end
-
-        -- D. Force Re-Equip & Lock Handle Item
-        local heldTool = char:FindFirstChildOfClass("Tool")
-        if not heldTool then
-            local backpackTool = LocalPlayer.Backpack:FindFirstChildOfClass("Tool")
-            if backpackTool and hum then
-                hum:EquipTool(backpackTool)
-            end
-        else
-            local handle = heldTool:FindFirstChild("Handle")
-            if handle and handle:IsA("BasePart") then
-                handle.CanCollide = false
-            end
-        end
-    end
-
-    -- 3. Swim Speed Bypass
-    if hum and _G.SwimSpeedToggle then
-        if hum:GetState() == Enum.HumanoidStateType.Swimming then
-            hum.WalkSpeed = _G.SwimSpeedVal
-        end
-    end
-
-    -- 4. Anti-Rubberband / Network Bypass
-    if hrp and (_G.WalkSpeedToggle or _G.JumpPowerToggle or _G.SwimSpeedToggle) then
-        sethiddenproperty(hrp, "NetworkIsSleeping", false)
-    end
-end)
-
--- MOVEMENT LOOP
-task.spawn(function()
-    while true do
-        pcall(function()
-            local char = LocalPlayer.Character
-            local hum = char and char:FindFirstChildOfClass("Humanoid")
-            if hum then
-                if _G.WalkSpeedToggle and hum:GetState() ~= Enum.HumanoidStateType.Swimming then
-                    hum.WalkSpeed = _G.WalkSpeedVal
-                end
-
-                if _G.JumpPowerToggle then
-                    hum.UseJumpPower = true
-                    hum.JumpPower = _G.JumpPowerVal
-                end
-            end
-        end)
-        task.wait(0.1)
-    end
 end)
