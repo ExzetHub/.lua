@@ -1,6 +1,6 @@
 -- ============================================
 -- EXZET HUB - BETA VERSION (VIBE CODING EDITION)
--- Integrated Auto Farm Gems Module
+-- Updated: Custom Resizer, Cleaned GodMode, Dynamic Multi-Select Rarity
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -27,14 +27,11 @@ _G.FlySpeed = 50
 _G.SwimSpeedToggle = false
 _G.SwimSpeedVal = 60
 
-_G.GodModeToggle = false
-_G.GuardBypassToggle = false
-
 _G.InfJump = false
 _G.Noclip = false
 _G.SavedCFrame = nil
 
--- States Auto Farm Gems (Hasil Integrasi)
+-- States Auto Farm Gems
 _G.AutoDigMobile = false
 _G.AutoPickMobile = false
 
@@ -91,7 +88,7 @@ Header.Parent = MainFrame
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -70, 1, 0)
 Title.Position = UDim2.new(0, 12, 0, 0)
-Title.Text = "Exzet Hub - Beta Version 1111"
+Title.Text = "Exzet Hub - Semi Auto Farm"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 13
@@ -192,7 +189,7 @@ TabInfoBtn.MouseButton1Click:Connect(function()
     TabMainBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
 end)
 
--- Helper UI Functions
+-- Helper: Create Switch
 local function createSwitch(parent, defaultState, onToggle)
     local switchBg = Instance.new("Frame")
     switchBg.Size = UDim2.new(0, 38, 0, 20)
@@ -229,6 +226,7 @@ local function createSwitch(parent, defaultState, onToggle)
     end)
 end
 
+-- Helper: Input Feature
 local function createFeatureWithInput(parentTarget, titleText, defaultVal, onInputChanged, onToggleChanged)
     local container = Instance.new("Frame")
     container.Size = UDim2.new(1, 0, 0, 34)
@@ -266,6 +264,7 @@ local function createFeatureWithInput(parentTarget, titleText, defaultVal, onInp
     createSwitch(container, false, onToggleChanged)
 end
 
+-- Helper: Toggle Only Feature
 local function createFeatureToggleOnly(parentTarget, titleText, defaultState, onToggleChanged)
     local container = Instance.new("Frame")
     container.Size = UDim2.new(1, 0, 0, 34)
@@ -288,6 +287,7 @@ local function createFeatureToggleOnly(parentTarget, titleText, defaultState, on
     createSwitch(container, defaultState, onToggleChanged)
 end
 
+-- Helper: Dropdown Group Base
 local function createDropdownGroup(parentTarget, groupTitle)
     local group = Instance.new("Frame")
     group.Size = UDim2.new(1, 0, 0, 36)
@@ -326,8 +326,130 @@ local function createDropdownGroup(parentTarget, groupTitle)
     return container
 end
 
+-- Helper: Custom Dropdown Select By Rarity (Dengan Toggle di kanan)
+local function createRarityDropdownGroup(parentTarget, groupTitle, defaultToggleState, onToggleChanged)
+    local group = Instance.new("Frame")
+    group.Size = UDim2.new(1, 0, 0, 36)
+    group.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
+    group.ClipsDescendants = true
+    group.Parent = parentTarget
+    Instance.new("UICorner", group).CornerRadius = UDim.new(0, 6)
+
+    local header = Instance.new("TextButton")
+    header.Size = UDim2.new(1, -55, 0, 36)
+    header.BackgroundTransparency = 1
+    header.Text = "  " .. groupTitle .. "  ▼"
+    header.TextColor3 = Color3.fromRGB(255, 255, 255)
+    header.Font = Enum.Font.GothamBold
+    header.TextSize = 12
+    header.TextXAlignment = Enum.TextXAlignment.Left
+    header.Parent = group
+
+    -- Switch On/Off di samping kanan header
+    createSwitch(group, defaultToggleState, onToggleChanged)
+
+    local container = Instance.new("Frame")
+    container.Size = UDim2.new(1, -16, 0, 0)
+    container.Position = UDim2.new(0, 8, 0, 38)
+    container.BackgroundTransparency = 1
+    container.Parent = group
+
+    local gridLayout = Instance.new("UIGridLayout", container)
+    gridLayout.CellSize = UDim2.new(0.48, 0, 0, 28)
+    gridLayout.CellPadding = UDim2.new(0.04, 0, 0, 4)
+
+    local isOpen = false
+    local function updateGroupHeight()
+        if isOpen then
+            local rows = math.ceil(#RarityList / 2)
+            local targetHeight = 38 + (rows * 32) + 6
+            TweenService:Create(group, TweenInfo.new(0.25), {Size = UDim2.new(1, 0, 0, targetHeight)}):Play()
+        else
+            TweenService:Create(group, TweenInfo.new(0.25), {Size = UDim2.new(1, 0, 0, 36)}):Play()
+        end
+    end
+
+    header.MouseButton1Click:Connect(function()
+        isOpen = not isOpen
+        header.Text = isOpen and ("  " .. groupTitle .. "  ▲") or ("  " .. groupTitle .. "  ▼")
+        updateGroupHeight()
+    end)
+
+    -- Item Buttons dalam Dropdown
+    for _, rName in ipairs(RarityList) do
+        local rBtn = Instance.new("TextButton")
+        rBtn.Text = rName
+        rBtn.Font = Enum.Font.GothamBold
+        rBtn.TextSize = 11
+        rBtn.Parent = container
+        Instance.new("UICorner", rBtn).CornerRadius = UDim.new(0, 4)
+
+        local isSelected = _G.SelectedRarities[rName] or false
+
+        local function updateVisual()
+            if isSelected then
+                rBtn.BackgroundColor3 = Color3.fromRGB(220, 220, 220) -- Putih Cerah (Terpilih)
+                rBtn.TextColor3 = Color3.fromRGB(15, 15, 15)
+            else
+                rBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 45) -- Abu-abu Mati (Tidak Terpilih)
+                rBtn.TextColor3 = Color3.fromRGB(120, 120, 125)
+            end
+        end
+
+        updateVisual()
+
+        rBtn.MouseButton1Click:Connect(function()
+            isSelected = not isSelected
+            _G.SelectedRarities[rName] = isSelected
+            updateVisual()
+        end)
+    end
+end
+
 -- ============================================
--- SECTION 3: AUTO FARM GEMS LOGIC & HELPERS
+-- SECTION 3: RESIZER FEATURE (Ujung Kanan Bawah)
+-- ============================================
+local ResizeGrip = Instance.new("TextButton")
+ResizeGrip.Size = UDim2.new(0, 16, 0, 16)
+ResizeGrip.Position = UDim2.new(1, -16, 1, -16)
+ResizeGrip.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
+ResizeGrip.Text = "↘"
+ResizeGrip.TextColor3 = Color3.fromRGB(220, 30, 30)
+ResizeGrip.Font = Enum.Font.GothamBold
+ResizeGrip.TextSize = 12
+ResizeGrip.ZIndex = 8
+ResizeGrip.Parent = MainFrame
+Instance.new("UICorner", ResizeGrip).CornerRadius = UDim.new(0, 4)
+
+local resizing = false
+local resizeStart = Vector2.zero
+local startSize = UDim2.new()
+
+ResizeGrip.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        resizing = true
+        resizeStart = input.Position
+        startSize = MainFrame.Size
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - resizeStart
+        local newWidth = math.max( startSize.X.Offset + delta.X, 320 )
+        local newHeight = math.max( startSize.Y.Offset + delta.Y, 220 )
+        MainFrame.Size = UDim2.new(0, newWidth, 0, newHeight)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        resizing = false
+    end
+end)
+
+-- ============================================
+-- SECTION 4: AUTO FARM GEMS LOGIC & HELPERS
 -- ============================================
 local function autoEquipPickaxe()
     local char = LocalPlayer.Character
@@ -336,9 +458,7 @@ local function autoEquipPickaxe()
     if char and not char:FindFirstChildWhichIsA("Tool") then
         if backpack then
             local tool = backpack:FindFirstChildWhichIsA("Tool")
-            if tool then
-                tool.Parent = char
-            end
+            if tool then tool.Parent = char end
         end
     end
 end
@@ -375,9 +495,7 @@ task.spawn(function()
                 local char = LocalPlayer.Character
                 if char then
                     local tool = char:FindFirstChildWhichIsA("Tool")
-                    if tool then
-                        tool:Activate()
-                    end
+                    if tool then tool:Activate() end
                 end
                 
                 pcall(function()
@@ -459,34 +577,8 @@ task.spawn(function()
 end)
 
 -- ============================================
--- SECTION 4: EXZET HUB CORE LOGIC LOOPS
+-- SECTION 5: CORE LOOPS (MOVEMENT, INF JUMP, FLY)
 -- ============================================
-
--- Anti-Drop & Tool Tracker
-local function trackTool(char)
-    char.ChildRemoved:Connect(function(child)
-        if child:IsA("Tool") and _G.GuardBypassToggle then
-            task.defer(function()
-                if child.Parent == workspace or child.Parent == LocalPlayer.Backpack then
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    if hum then
-                        child.Parent = LocalPlayer.Backpack
-                        hum:EquipTool(child)
-                    end
-                end
-            end)
-        end
-    end)
-end
-
-LocalPlayer.CharacterAdded:Connect(function(char)
-    char:WaitForChild("Humanoid")
-    trackTool(char)
-end)
-
-if LocalPlayer.Character then
-    trackTool(LocalPlayer.Character)
-end
 
 -- Infinite Jump
 UserInputService.JumpRequest:Connect(function()
@@ -547,58 +639,12 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- System Loop (God Mode, Bypass, Swim, Anti-Rubberband)
+-- Swim & Network Loop
 RunService.Stepped:Connect(function()
     local char = LocalPlayer.Character
     if not char then return end
     local hum = char:FindFirstChildOfClass("Humanoid")
     local hrp = char:FindFirstChild("HumanoidRootPart")
-
-    if _G.GodModeToggle and hum then
-        hum.Health = hum.MaxHealth
-    end
-
-    if _G.GuardBypassToggle then
-        for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:IsA("Model") and (obj:FindFirstChildOfClass("Humanoid") or obj.Name:lower():find("guard")) then
-                if obj ~= char then
-                    for _, part in pairs(obj:GetChildren()) do
-                        if part:IsA("BasePart") then
-                            part.CanCollide = false
-                        end
-                    end
-                end
-            end
-        end
-
-        if hum then
-            local state = hum:GetState()
-            if state == Enum.HumanoidStateType.Ragdoll 
-            or state == Enum.HumanoidStateType.FallingDown 
-            or state == Enum.HumanoidStateType.Physics 
-            or state == Enum.HumanoidStateType.PlatformStand then
-                hum:ChangeState(Enum.HumanoidStateType.GettingUp)
-            end
-            hum.PlatformStand = false
-        end
-
-        if hrp and hrp.AssemblyLinearVelocity.Magnitude > 25 then
-            hrp.AssemblyLinearVelocity = Vector3.new(0, hrp.AssemblyLinearVelocity.Y, 0)
-        end
-
-        local heldTool = char:FindFirstChildOfClass("Tool")
-        if not heldTool then
-            local backpackTool = LocalPlayer.Backpack:FindFirstChildOfClass("Tool")
-            if backpackTool and hum then
-                hum:EquipTool(backpackTool)
-            end
-        else
-            local handle = heldTool:FindFirstChild("Handle")
-            if handle and handle:IsA("BasePart") then
-                handle.CanCollide = false
-            end
-        end
-    end
 
     if hum and _G.SwimSpeedToggle then
         if hum:GetState() == Enum.HumanoidStateType.Swimming then
@@ -633,7 +679,7 @@ task.spawn(function()
 end)
 
 -- ============================================
--- SECTION 5: UI CATEGORY BUILDER
+-- SECTION 6: UI CATEGORY BUILDER
 -- ============================================
 
 -- 1. DROPDOWN GROUP: PLAYER
@@ -663,33 +709,17 @@ createFeatureToggleOnly(playerContainer, "Noclip", false, function(state)
     _G.Noclip = state
 end)
 
--- 2. DROPDOWN GROUP: GOD MODE
-local godContainer = createDropdownGroup(MainContent, "God Mode")
-
-createFeatureToggleOnly(godContainer, "Kebal Tembakan (Health Lock)", false, function(state)
-    _G.GodModeToggle = state
-end)
-
-createFeatureToggleOnly(godContainer, "Kebal Guard (Anti-Touch/Pukul)", false, function(state)
-    _G.GuardBypassToggle = state
-end)
-
--- 3. DROPDOWN GROUP: AUTO FARM GEMS (FITUR BARU BARUSAN)
+-- 2. DROPDOWN GROUP: AUTO FARM GEMS
 local farmContainer = createDropdownGroup(MainContent, "Auto Farm Gems")
 
 createFeatureToggleOnly(farmContainer, "Auto Dig (Smooth Mobile)", false, function(state)
     _G.AutoDigMobile = state
 end)
 
-createFeatureToggleOnly(farmContainer, "Auto Pick Items (By Rarity)", false, function(state)
+-- 3. DROPDOWN GROUP: AUTO PICK UP & SELECT RARITY
+createRarityDropdownGroup(MainContent, "Auto Pick Items (Select Rarity)", false, function(state)
     _G.AutoPickMobile = state
 end)
-
-for _, rName in ipairs(RarityList) do
-    createFeatureToggleOnly(farmContainer, "Filter: Pick " .. rName, _G.SelectedRarities[rName] or false, function(state)
-        _G.SelectedRarities[rName] = state
-    end)
-end
 
 -- 4. KATEGORI: TELEPORT
 local tpGroup = Instance.new("Frame")
@@ -824,6 +854,7 @@ MinBtn.MouseButton1Click:Connect(function()
         MainContent.Visible = false
         InfoContent.Visible = false
         TabBar.Visible = false
+        ResizeGrip.Visible = false
         TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 250, 0, 35)}):Play()
         TweenService:Create(FrameCorner, tweenInfo, {CornerRadius = UDim.new(0, 8)}):Play()
     else
@@ -834,6 +865,7 @@ MinBtn.MouseButton1Click:Connect(function()
         tween.Completed:Connect(function()
             if not isMinimized then
                 TabBar.Visible = true
+                ResizeGrip.Visible = true
                 if TabMainBtn.TextColor3 == Color3.fromRGB(255, 255, 255) then
                     MainContent.Visible = true
                 else
@@ -851,8 +883,6 @@ YesBtn.MouseButton1Click:Connect(function()
     _G.JumpPowerToggle = false
     _G.FlyToggle = false
     _G.SwimSpeedToggle = false
-    _G.GodModeToggle = false
-    _G.GuardBypassToggle = false
     _G.InfJump = false
     _G.Noclip = false
     _G.AutoDigMobile = false
