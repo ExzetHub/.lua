@@ -33,6 +33,7 @@ _G.SavedCFrame = nil
 -- States Auto Farm
 _G.AutoDigMobile = false
 _G.AutoPickMobile = false
+_G.AutoEquipBestToggle = false
 _G.MinGemValue = 200000 -- Default minimum harga item ($)
 
 _G.SelectedRarities = {
@@ -48,6 +49,16 @@ _G.SelectedRarities = {
 
 local RarityList = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Exotic", "Zenith"}
 
+-- LIST ALL PICKAXES FROM IMAGE
+local PickaxeList = {
+    "aurora alloy", "celestite crusher", "chipped flint", "diamond fang",
+    "frostbite alloy", "genesis core", "hardened iron", "meteorite edge",
+    "obsidian carver", "primordial breaker", "reinforced tungsten", "rusted scrapper",
+    "shadowed talon", "singularity edge", "splintered timber", "stormcore splitter",
+    "sunforged maul", "tempered steel", "titanium breaker", "twilight cleaver",
+    "voidsteel reaver", "pickaxe", "pick", "dig"
+}
+
 -- Clean Old UI
 local ParentGui = LocalPlayer:WaitForChild("PlayerGui")
 if ParentGui:FindFirstChild("ExzetFinalHub") then
@@ -55,29 +66,48 @@ if ParentGui:FindFirstChild("ExzetFinalHub") then
 end
 
 -- ============================================
--- HELPER: PARSER ANGKA PINTAR ($113,600 / 200k / 200rb)
+-- HELPER: PARSER ANGKA PINTAR
 -- ============================================
 local function parseFormattedNumber(str)
     if not str then return 0 end
-    
     local cleanStr = tostring(str):lower():gsub("%s+", "")
-    cleanStr = cleanStr:gsub("%$", "") -- Hapus simbol $
+    cleanStr = cleanStr:gsub("%$", "")
 
-    -- Cek akhiran Ribuan (k / rb)
     if cleanStr:find("k$") or cleanStr:find("rb$") then
         local numStr = cleanStr:gsub("[k|rb]", ""):gsub(",", ".")
         local num = tonumber(numStr)
         return num and (num * 1000) or 0
-    -- Cek akhiran Juta (m / jt)
     elseif cleanStr:find("m$") or cleanStr:find("jt$") then
         local numStr = cleanStr:gsub("[m|jt]", ""):gsub(",", ".")
         local num = tonumber(numStr)
         return num and (num * 1000000) or 0
     end
 
-    -- Hapus koma pemisah ribuan bawaan game ($113,600 -> 113600)
     cleanStr = cleanStr:gsub(",", "")
     return tonumber(cleanStr) or 0
+end
+
+local function formatNumber(num)
+    if num >= 1000000000 then
+        return string.format("%.2fB", num / 1000000000)
+    elseif num >= 1000000 then
+        return string.format("%.2fM", num / 1000000)
+    elseif num >= 1000 then
+        return string.format("%.2fK", num / 1000)
+    else
+        return tostring(math.floor(num))
+    end
+end
+
+local function isPickaxe(tool)
+    if not tool or not tool:IsA("Tool") then return false end
+    local toolName = tool.Name:lower()
+    for _, name in ipairs(PickaxeList) do
+        if toolName:find(name) then
+            return true
+        end
+    end
+    return false
 end
 
 -- ============================================
@@ -88,6 +118,44 @@ ScreenGui.Name = "ExzetFinalHub"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = ParentGui
 
+-- OVERLAY VALUE DISPLAY (DI ATAS HOTBAR)
+local ValueDisplayFrame = Instance.new("Frame")
+ValueDisplayFrame.Size = UDim2.new(0, 260, 0, 48)
+ValueDisplayFrame.Position = UDim2.new(0.5, -130, 0.82, -50)
+ValueDisplayFrame.BackgroundColor3 = Color3.fromRGB(15, 5, 5)
+ValueDisplayFrame.BackgroundTransparency = 0.2
+ValueDisplayFrame.Active = true
+ValueDisplayFrame.Draggable = true
+ValueDisplayFrame.Parent = ScreenGui
+
+Instance.new("UICorner", ValueDisplayFrame).CornerRadius = UDim.new(0, 8)
+local ValStroke = Instance.new("UIStroke", ValueDisplayFrame)
+ValStroke.Color = Color3.fromRGB(220, 30, 30)
+ValStroke.Thickness = 1.2
+
+local GardenValLabel = Instance.new("TextLabel")
+GardenValLabel.Size = UDim2.new(1, -12, 0.5, 0)
+GardenValLabel.Position = UDim2.new(0, 6, 0, 2)
+GardenValLabel.Text = "🌱 Garden Value: $0"
+GardenValLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+GardenValLabel.Font = Enum.Font.GothamBold
+GardenValLabel.TextSize = 11
+GardenValLabel.TextXAlignment = Enum.TextXAlignment.Left
+GardenValLabel.BackgroundTransparency = 1
+GardenValLabel.Parent = ValueDisplayFrame
+
+local BackpackValLabel = Instance.new("TextLabel")
+BackpackValLabel.Size = UDim2.new(1, -12, 0.5, 0)
+BackpackValLabel.Position = UDim2.new(0, 6, 0.5, 0)
+BackpackValLabel.Text = "🎒 Backpack Value: $0"
+BackpackValLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+BackpackValLabel.Font = Enum.Font.GothamBold
+BackpackValLabel.TextSize = 11
+BackpackValLabel.TextXAlignment = Enum.TextXAlignment.Left
+BackpackValLabel.BackgroundTransparency = 1
+BackpackValLabel.Parent = ValueDisplayFrame
+
+-- MAIN HUB FRAME
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 480, 0, 320)
 MainFrame.Position = UDim2.new(0.5, -240, 0.35, -160)
@@ -355,7 +423,7 @@ local function createDropdownGroup(parentTarget, groupTitle)
     return container
 end
 
--- COMBINED AUTO COLLECT DROPDOWN (TOGGLE + RARITY SCROLL + PRICE INPUT)
+-- AUTO COLLECT DROPDOWN
 local function createAutoCollectDropdown(parentTarget, groupTitle, defaultToggleState, onToggleChanged)
     local group = Instance.new("Frame")
     group.Size = UDim2.new(1, 0, 0, 36)
@@ -390,7 +458,6 @@ local function createAutoCollectDropdown(parentTarget, groupTitle, defaultToggle
     local containerList = Instance.new("UIListLayout", container)
     containerList.Padding = UDim.new(0, 6)
 
-    -- Label Rarity
     local rLabel = Instance.new("TextLabel")
     rLabel.Size = UDim2.new(1, 0, 0, 18)
     rLabel.Text = "Filter Rarity:"
@@ -401,7 +468,6 @@ local function createAutoCollectDropdown(parentTarget, groupTitle, defaultToggle
     rLabel.BackgroundTransparency = 1
     rLabel.Parent = container
 
-    -- Scroll Frame untuk Rarity
     local rarityScroll = Instance.new("ScrollingFrame")
     rarityScroll.Size = UDim2.new(1, 0, 0, 95)
     rarityScroll.BackgroundTransparency = 0.5
@@ -444,7 +510,6 @@ local function createAutoCollectDropdown(parentTarget, groupTitle, defaultToggle
         end)
     end
 
-    -- Input Price Filter ($)
     local priceContainer = Instance.new("Frame")
     priceContainer.Size = UDim2.new(1, 0, 0, 32)
     priceContainer.BackgroundColor3 = Color3.fromRGB(30, 12, 12)
@@ -535,7 +600,7 @@ UserInputService.InputEnded:Connect(function(input)
 end)
 
 -- ============================================
--- SECTION 4: AUTO FARM LOGIC (DIG, PRICE & RARITY)
+-- SECTION 4: CORE VALUE CALCULATOR & LOGIC
 -- ============================================
 
 local function getItemRarity(item)
@@ -588,10 +653,87 @@ local function getGemValue(item)
     return 0
 end
 
--- THREAD AUTO DIG (FIXED ANTI-SPAM SLOT 1 & SMOOTH AUTO SWING)
+-- THREAD CALCULATE BACKPACK & GARDEN VALUE
 task.spawn(function()
-    local isEquipping = false
+    while true do
+        pcall(function()
+            -- 1. Backpack Value Calculation
+            local totalBpVal = 0
+            local bp = LocalPlayer:FindFirstChild("Backpack")
+            if bp then
+                for _, tool in pairs(bp:GetChildren()) do
+                    totalBpVal = totalBpVal + getGemValue(tool)
+                end
+            end
+            local char = LocalPlayer.Character
+            if char then
+                for _, tool in pairs(char:GetChildren()) do
+                    if tool:IsA("Tool") then
+                        totalBpVal = totalBpVal + getGemValue(tool)
+                    end
+                end
+            end
+            BackpackValLabel.Text = "🎒 Backpack Value: $" .. formatNumber(totalBpVal)
 
+            -- 2. Garden Placed Gems Value Calculation
+            local totalGardenVal = 0
+            local plotsFolder = Workspace:FindFirstChild("Plots") or Workspace:FindFirstChild("Gardens") or Workspace:FindFirstChild("PlotsFolder")
+            if plotsFolder then
+                for _, item in pairs(plotsFolder:GetDescendants()) do
+                    if item:IsA("Model") or item:IsA("BasePart") then
+                        if item.Name:lower():find("gem") or item:FindFirstChild("Value") or item:GetAttribute("Value") then
+                            totalGardenVal = totalGardenVal + getGemValue(item)
+                        end
+                    end
+                end
+            end
+            GardenValLabel.Text = "🌱 Garden Value: $" .. formatNumber(totalGardenVal)
+        end)
+        task.wait(1.5)
+    end
+end)
+
+-- THREAD AUTO EQUIP BEST PICKAXE (HIGHEST TO LOWEST VALUE)
+task.spawn(function()
+    while true do
+        if _G.AutoEquipBestToggle then
+            pcall(function()
+                local bp = LocalPlayer:FindFirstChild("Backpack")
+                local char = LocalPlayer.Character
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+                if bp and hum then
+                    local bestPickaxe = nil
+                    local highestVal = -1
+
+                    -- Check all pickaxes in Backpack & Character
+                    local allItems = {}
+                    for _, item in pairs(bp:GetChildren()) do table.insert(allItems, item) end
+                    for _, item in pairs(char:GetChildren()) do table.insert(allItems, item) end
+
+                    for _, tool in pairs(allItems) do
+                        if isPickaxe(tool) then
+                            local val = getGemValue(tool)
+                            if val > highestVal then
+                                highestVal = val
+                                bestPickaxe = tool
+                            end
+                        end
+                    end
+
+                    -- Equip highest value Pickaxe if not equipped
+                    if bestPickaxe and bestPickaxe.Parent ~= char then
+                        hum:EquipTool(bestPickaxe)
+                    end
+                end
+            end)
+        end
+        task.wait(2)
+    end
+end)
+
+-- THREAD AUTO DIG (SWING SPECIFIC TO PICKAXE ONLY)
+task.spawn(function()
     while true do
         if _G.AutoDigMobile then
             pcall(function()
@@ -599,30 +741,10 @@ task.spawn(function()
                 if char then
                     local heldTool = char:FindFirstChildWhichIsA("Tool")
 
-                    -- 1. Jika tangan KOSONG dan tidak sedang proses equip, tekan tombol '1' SEKALI saja
-                    if not heldTool and not isEquipping then
-                        isEquipping = true
-                        
-                        -- Send keycode 1 (Hotbar slot 1)
-                        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.One, false, game)
-                        task.wait(0.05)
-                        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.One, false, game)
-                        
-                        -- Jeda waktu tunggu equip animasi game (Mencegah Spam)
-                        task.wait(0.4)
-                        isEquipping = false
-                    end
-
-                    -- 2. Jika Pickaxe SUDAH dipegang, lakukan Auto Swing secara lancar
-                    heldTool = char:FindFirstChildWhichIsA("Tool")
-                    if heldTool then
-                        -- Direct tool activate
+                    -- Cek apakah sedang memegang Pickaxe
+                    if isPickaxe(heldTool) then
+                        -- Hanya swing jika yang dipegang BENAR-BENAR Pickaxe
                         heldTool:Activate()
-
-                        -- Direct click/tap event
-                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-                        task.wait(0.03)
-                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
                     end
                 end
             end)
@@ -653,7 +775,6 @@ task.spawn(function()
                                     local rarity = getItemRarity(parentModel)
                                     local gemValue = getGemValue(parentModel)
 
-                                    -- Syarat Rarity & Harga > Min Value
                                     local rarityMatched = _G.SelectedRarities[rarity] == true
                                     local valueMatched = (gemValue > _G.MinGemValue)
 
@@ -814,7 +935,11 @@ createFeatureToggleOnly(farmContainer, "Auto Dig (Smooth Mobile)", false, functi
     _G.AutoDigMobile = state
 end)
 
--- 3. COMBINED DROPDOWN: AUTO COLLECT (TOGGLE + SCROLL RARITY + PRICE)
+createFeatureToggleOnly(farmContainer, "Auto Equip Best Pickaxe", false, function(state)
+    _G.AutoEquipBestToggle = state
+end)
+
+-- 3. COMBINED DROPDOWN: AUTO COLLECT
 createAutoCollectDropdown(MainContent, "Auto Collect Gems", false, function(state)
     _G.AutoPickMobile = state
 end)
@@ -887,7 +1012,7 @@ local InfoText = Instance.new("TextLabel")
 InfoText.Size = UDim2.new(1, 0, 0, 0)
 InfoText.AutomaticSize = Enum.AutomaticSize.Y
 InfoText.BackgroundTransparency = 1
-InfoText.Text = "<b>EXZET HUB - BETA VERSION</b>\n\n<b>Version:</b> 2.8 RNG Release\n<b>Status:</b> Undetected\n<b>Owner:</b> Exzet Community\n\nEnjoy script-nya!"
+InfoText.Text = "<b>EXZET HUB - BETA VERSION</b>\n\n<b>Version:</b> 2.9 RNG Release\n<b>Status:</b> Undetected\n<b>Owner:</b> Exzet Community\n\nEnjoy script-nya!"
 InfoText.TextColor3 = Color3.fromRGB(220, 220, 220)
 InfoText.Font = Enum.Font.Gotham
 InfoText.TextSize = 11
@@ -977,6 +1102,7 @@ end)
 YesBtn.MouseButton1Click:Connect(function()
     _G.AutoDigMobile = false
     _G.AutoPickMobile = false
+    _G.AutoEquipBestToggle = false
     _G.WalkSpeedToggle = false
     _G.JumpPowerToggle = false
     _G.FlyToggle = false
