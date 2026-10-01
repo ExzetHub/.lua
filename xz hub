@@ -1,6 +1,5 @@
 -- ============================================
--- EXZET HUB - BETA VERSION (VIBE CODING EDITION)
--- Fixed Auto Dig, Persistent Rarity Toggle, & Responsive Fill UI
+-- EXZET HUB - BETA VERSION (FIXED AUTO DIG HOTBAR ISSUE)
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -88,7 +87,7 @@ Header.Parent = MainFrame
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -70, 1, 0)
 Title.Position = UDim2.new(0, 12, 0, 0)
-Title.Text = "Exzet Hub - Beta Version 1111"
+Title.Text = "Exzet Hub - V1"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 13
@@ -145,7 +144,7 @@ TabInfoBtn.TextSize = 11
 TabInfoBtn.Parent = TabBar
 Instance.new("UICorner", TabInfoBtn).CornerRadius = UDim.new(0, 6)
 
--- Content Frames (Fully Responsive Size)
+-- Content Frames
 local MainContent = Instance.new("ScrollingFrame")
 MainContent.Size = UDim2.new(1, -20, 1, -75)
 MainContent.Position = UDim2.new(0, 10, 0, 68)
@@ -329,7 +328,7 @@ local function createDropdownGroup(parentTarget, groupTitle)
     return container
 end
 
--- Helper: Custom Dropdown Select By Rarity (Toggle Tetap Muncul & Terlihat)
+-- Helper: Rarity Dropdown
 local function createRarityDropdownGroup(parentTarget, groupTitle, defaultToggleState, onToggleChanged)
     local group = Instance.new("Frame")
     group.Size = UDim2.new(1, 0, 0, 36)
@@ -353,7 +352,6 @@ local function createRarityDropdownGroup(parentTarget, groupTitle, defaultToggle
     headerBtn.TextXAlignment = Enum.TextXAlignment.Left
     headerBtn.Parent = headerFrame
 
-    -- Switch On/Off Utama
     createSwitch(headerFrame, defaultToggleState, onToggleChanged)
 
     local container = Instance.new("Frame")
@@ -395,10 +393,10 @@ local function createRarityDropdownGroup(parentTarget, groupTitle, defaultToggle
 
         local function updateVisual()
             if isSelected then
-                rBtn.BackgroundColor3 = Color3.fromRGB(220, 220, 220) -- Putih Cerah
+                rBtn.BackgroundColor3 = Color3.fromRGB(220, 220, 220)
                 rBtn.TextColor3 = Color3.fromRGB(15, 15, 15)
             else
-                rBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 45) -- Abu-abu Mati
+                rBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
                 rBtn.TextColor3 = Color3.fromRGB(120, 120, 125)
             end
         end
@@ -414,7 +412,7 @@ local function createRarityDropdownGroup(parentTarget, groupTitle, defaultToggle
 end
 
 -- ============================================
--- SECTION 3: RESIZER FEATURE (Ujung Kanan Bawah)
+-- SECTION 3: RESIZER FEATURE
 -- ============================================
 local ResizeGrip = Instance.new("TextButton")
 ResizeGrip.Size = UDim2.new(0, 16, 0, 16)
@@ -456,27 +454,37 @@ UserInputService.InputEnded:Connect(function(input)
 end)
 
 -- ============================================
--- SECTION 4: AUTO FARM GEMS LOGIC & HELPERS
+-- SECTION 4: PERBAIKAN FUNGSI DIG & TOOL FILTER
 -- ============================================
-local function isHoldingTool()
-    local char = LocalPlayer.Character
-    if char then
-        local currentTool = char:FindFirstChildWhichIsA("Tool")
-        return currentTool ~= nil
-    end
-    return false
+
+-- Fungsi Cek Apakah Tool Adalah Cangkul/Pickaxe
+local function isDigTool(tool)
+    if not tool or not tool:IsA("Tool") then return false end
+    local name = tool.Name:lower()
+    return name:find("pick") or name:find("dig") or name:find("shovel") or name:find("cangkul") or name:find("hoe")
 end
 
+-- Cari Pickaxe di Backpack
 local function autoEquipPickaxe()
     local char = LocalPlayer.Character
     local backpack = LocalPlayer:FindFirstChild("Backpack")
     
-    if char and not isHoldingTool() then
-        if backpack then
-            local tool = backpack:FindFirstChildWhichIsA("Tool")
-            if tool then tool.Parent = char end
+    if char and backpack then
+        -- Cek apakah di tangan sudah pegang Pickaxe
+        local currentTool = char:FindFirstChildWhichIsA("Tool")
+        if currentTool and isDigTool(currentTool) then
+            return true
+        end
+
+        -- Cari Pickaxe di Backpack
+        for _, item in ipairs(backpack:GetChildren()) do
+            if item:IsA("Tool") and isDigTool(item) then
+                item.Parent = char
+                return true
+            end
         end
     end
+    return false
 end
 
 local function getItemRarity(item)
@@ -501,35 +509,32 @@ local function getItemRarity(item)
     return "Unknown"
 end
 
--- Thread Auto Dig yang Diperbarui
+-- Thread Auto Dig Safe (Mencegah Menggunakan/Membuang Item Lain)
 task.spawn(function()
     while true do
         if _G.AutoDigMobile then
             pcall(function()
-                -- 1. Coba auto-equip dari backpack kalau tangan lagi kosong
-                autoEquipPickaxe()
+                local hasPickaxe = autoEquipPickaxe()
                 
-                -- 2. HANYA jalankan fungsi gali/swing JIKA karakter BENAR-BENAR sedang memegang Tool
-                if isHoldingTool() then
+                -- HANYA jalankan swing/dig JIKA karakter BENAR-BENAR memegang Tool bertema Dig/Pickaxe
+                if hasPickaxe then
                     local char = LocalPlayer.Character
                     local tool = char and char:FindFirstChildWhichIsA("Tool")
                     
-                    -- Swing Tool yang dipegang
-                    if tool then
+                    if tool and isDigTool(tool) then
                         tool:Activate()
+
+                        pcall(function()
+                            ContextActionService:CallFunction("Dig", Enum.UserInputState.Begin, nil)
+                            task.wait(0.02)
+                            ContextActionService:CallFunction("Dig", Enum.UserInputState.End, nil)
+                        end)
+                        pcall(function()
+                            ContextActionService:CallFunction("dig", Enum.UserInputState.Begin, nil)
+                            task.wait(0.02)
+                            ContextActionService:CallFunction("dig", Enum.UserInputState.End, nil)
+                        end)
                     end
-                    
-                    -- Memicu fungsi ContextActionService Dig
-                    pcall(function()
-                        ContextActionService:CallFunction("Dig", Enum.UserInputState.Begin, nil)
-                        task.wait(0.02)
-                        ContextActionService:CallFunction("Dig", Enum.UserInputState.End, nil)
-                    end)
-                    pcall(function()
-                        ContextActionService:CallFunction("dig", Enum.UserInputState.Begin, nil)
-                        task.wait(0.02)
-                        ContextActionService:CallFunction("dig", Enum.UserInputState.End, nil)
-                    end)
                 end
             end)
         end
@@ -647,7 +652,7 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- Swim & Network Loop
+-- Swim & Movement
 RunService.Stepped:Connect(function()
     local char = LocalPlayer.Character
     if not char then return end
@@ -661,7 +666,9 @@ RunService.Stepped:Connect(function()
     end
 
     if hrp and (_G.WalkSpeedToggle or _G.JumpPowerToggle or _G.SwimSpeedToggle) then
-        sethiddenproperty(hrp, "NetworkIsSleeping", false)
+        pcall(function()
+            sethiddenproperty(hrp, "NetworkIsSleeping", false)
+        end)
     end
 end)
 
@@ -797,7 +804,7 @@ local InfoText = Instance.new("TextLabel")
 InfoText.Size = UDim2.new(1, 0, 0, 0)
 InfoText.AutomaticSize = Enum.AutomaticSize.Y
 InfoText.BackgroundTransparency = 1
-InfoText.Text = "<b>EXZET HUB - BETA VERSION</b>\n\n<b>Version:</b> 2.6 Beta Release\n<b>Status:</b> Undetected (Bypass Anti-Cheat)\n<b>Owner:</b> Exzet Community\n\nIni masih beta ya gw masih belajar ini pun cuma vibe coding mwhehehe, enjoy aja ya dengan fitur kek gini😘"
+InfoText.Text = "<b>EXZET HUB - BETA VERSION</b>\n\n<b>Version:</b> 2.6 Beta Release\n<b>Status:</b> Undetected\n<b>Owner:</b> Exzet Community\n\nIni masih beta ya gw masih belajar ini pun cuma vibe coding mwhehehe, enjoy aja ya dengan fitur kek gini😘"
 InfoText.TextColor3 = Color3.fromRGB(220, 220, 220)
 InfoText.Font = Enum.Font.Gotham
 InfoText.TextSize = 11
@@ -872,28 +879,30 @@ MinBtn.MouseButton1Click:Connect(function()
         tween:Play()
         tween.Completed:Connect(function()
             if not isMinimized then
+                MainContent.Visible = not InfoContent.Visible
                 TabBar.Visible = true
                 ResizeGrip.Visible = true
-                if TabMainBtn.TextColor3 == Color3.fromRGB(255, 255, 255) then
-                    MainContent.Visible = true
-                else
-                    InfoContent.Visible = true
-                end
             end
         end)
     end
 end)
 
-CloseBtn.MouseButton1Click:Connect(function() ConfirmFrame.Visible = true end)
-NoBtn.MouseButton1Click:Connect(function() ConfirmFrame.Visible = false end)
+CloseBtn.MouseButton1Click:Connect(function()
+    ConfirmFrame.Visible = true
+end)
+
 YesBtn.MouseButton1Click:Connect(function()
+    _G.AutoDigMobile = false
+    _G.AutoPickMobile = false
     _G.WalkSpeedToggle = false
     _G.JumpPowerToggle = false
     _G.FlyToggle = false
     _G.SwimSpeedToggle = false
     _G.InfJump = false
     _G.Noclip = false
-    _G.AutoDigMobile = false
-    _G.AutoPickMobile = false
     ScreenGui:Destroy()
+end)
+
+NoBtn.MouseButton1Click:Connect(function()
+    ConfirmFrame.Visible = false
 end)
