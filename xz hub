@@ -1,5 +1,5 @@
 -- ============================================
--- EXZET HUB - BETA VERSION (FIXED AUTO DIG HOTBAR ISSUE)
+-- EXZET HUB - BETA VERSION (SPECIAL RNG EDITION)
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -30,9 +30,10 @@ _G.InfJump = false
 _G.Noclip = false
 _G.SavedCFrame = nil
 
--- States Auto Farm Gems
+-- States Auto Farm
 _G.AutoDigMobile = false
 _G.AutoPickMobile = false
+_G.MinGemValue = 10000 -- Default minimum harga item ($) yang mau di-collect
 
 _G.SelectedRarities = {
     ["Common"] = false,
@@ -87,7 +88,7 @@ Header.Parent = MainFrame
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -70, 1, 0)
 Title.Position = UDim2.new(0, 12, 0, 0)
-Title.Text = "Exzet Hub - V1"
+Title.Text = "Exzet Hub - Beta Version"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 13
@@ -328,7 +329,7 @@ local function createDropdownGroup(parentTarget, groupTitle)
     return container
 end
 
--- Helper: Rarity Dropdown
+-- Helper: Rarity Dropdown Group
 local function createRarityDropdownGroup(parentTarget, groupTitle, defaultToggleState, onToggleChanged)
     local group = Instance.new("Frame")
     group.Size = UDim2.new(1, 0, 0, 36)
@@ -454,37 +455,15 @@ UserInputService.InputEnded:Connect(function(input)
 end)
 
 -- ============================================
--- SECTION 4: PERBAIKAN FUNGSI DIG & TOOL FILTER
+-- SECTION 4: AUTO FARM LOGIC (DIG, PRICE & RARITY PICK)
 -- ============================================
 
--- Fungsi Cek Apakah Tool Adalah Cangkul/Pickaxe
-local function isDigTool(tool)
-    if not tool or not tool:IsA("Tool") then return false end
-    local name = tool.Name:lower()
-    return name:find("pick") or name:find("dig") or name:find("shovel") or name:find("cangkul") or name:find("hoe")
-end
-
--- Cari Pickaxe di Backpack
-local function autoEquipPickaxe()
+local function getHeldTool()
     local char = LocalPlayer.Character
-    local backpack = LocalPlayer:FindFirstChild("Backpack")
-    
-    if char and backpack then
-        -- Cek apakah di tangan sudah pegang Pickaxe
-        local currentTool = char:FindFirstChildWhichIsA("Tool")
-        if currentTool and isDigTool(currentTool) then
-            return true
-        end
-
-        -- Cari Pickaxe di Backpack
-        for _, item in ipairs(backpack:GetChildren()) do
-            if item:IsA("Tool") and isDigTool(item) then
-                item.Parent = char
-                return true
-            end
-        end
+    if char then
+        return char:FindFirstChildWhichIsA("Tool")
     end
-    return false
+    return nil
 end
 
 local function getItemRarity(item)
@@ -509,74 +488,101 @@ local function getItemRarity(item)
     return "Unknown"
 end
 
--- Thread Auto Dig Safe (Mencegah Menggunakan/Membuang Item Lain)
+-- Helper Membaca Harga / Value Gems (Termasuk format $24,000)
+local function getGemValue(item)
+    if item:GetAttribute("Value") then return tonumber(item:GetAttribute("Value")) end
+    if item:GetAttribute("Price") then return tonumber(item:GetAttribute("Price")) end
+    
+    local valObj = item:FindFirstChild("Value") or item:FindFirstChild("Price")
+    if valObj and (valObj:IsA("IntValue") or valObj:IsA("NumberValue")) then
+        return valObj.Value
+    end
+
+    for _, label in pairs(item:GetDescendants()) do
+        if label:IsA("TextLabel") and label.Text ~= "" then
+            local text = label.Text
+            if text:find("%$") or text:find("%d") then
+                local cleanText = text:gsub("[^%d]", "") -- Bersihkan simbol $, koma, dll
+                local num = tonumber(cleanText)
+                if num then return num end
+            end
+        end
+    end
+
+    return 0
+end
+
+-- Thread Auto Dig
 task.spawn(function()
     while true do
         if _G.AutoDigMobile then
             pcall(function()
-                local hasPickaxe = autoEquipPickaxe()
-                
-                -- HANYA jalankan swing/dig JIKA karakter BENAR-BENAR memegang Tool bertema Dig/Pickaxe
-                if hasPickaxe then
-                    local char = LocalPlayer.Character
-                    local tool = char and char:FindFirstChildWhichIsA("Tool")
-                    
-                    if tool and isDigTool(tool) then
-                        tool:Activate()
+                local char = LocalPlayer.Character
+                local backpack = LocalPlayer:FindFirstChild("Backpack")
+                local heldTool = getHeldTool()
 
-                        pcall(function()
-                            ContextActionService:CallFunction("Dig", Enum.UserInputState.Begin, nil)
-                            task.wait(0.02)
-                            ContextActionService:CallFunction("Dig", Enum.UserInputState.End, nil)
-                        end)
-                        pcall(function()
-                            ContextActionService:CallFunction("dig", Enum.UserInputState.Begin, nil)
-                            task.wait(0.02)
-                            ContextActionService:CallFunction("dig", Enum.UserInputState.End, nil)
-                        end)
+                if not heldTool and backpack then
+                    local toolInBackpack = backpack:FindFirstChildWhichIsA("Tool")
+                    if toolInBackpack then
+                        toolInBackpack.Parent = char
+                        heldTool = toolInBackpack
+                        task.wait(0.05)
                     end
+                end
+
+                if heldTool then
+                    heldTool:Activate()
+
+                    pcall(function()
+                        ContextActionService:CallFunction("Dig", Enum.UserInputState.Begin, nil)
+                        task.wait(0.01)
+                        ContextActionService:CallFunction("Dig", Enum.UserInputState.End, nil)
+                    end)
+                    pcall(function()
+                        ContextActionService:CallFunction("dig", Enum.UserInputState.Begin, nil)
+                        task.wait(0.01)
+                        ContextActionService:CallFunction("dig", Enum.UserInputState.End, nil)
+                    end)
+                    pcall(function()
+                        ContextActionService:CallFunction("Mine", Enum.UserInputState.Begin, nil)
+                        task.wait(0.01)
+                        ContextActionService:CallFunction("Mine", Enum.UserInputState.End, nil)
+                    end)
                 end
             end)
         end
-        task.wait(0.12)
+        task.wait(0.1)
     end
 end)
 
--- Thread Auto Pick Up Gems
+-- Thread Auto Pick Up (Filtered by Price & Rarity)
 task.spawn(function()
     while true do
         if _G.AutoPickMobile then
             pcall(function()
-                local spawnedGems = Workspace:FindFirstChild("SpawnedGems")
                 local char = LocalPlayer.Character
                 local hrp = char and char:FindFirstChild("HumanoidRootPart")
                 
-                if hrp and spawnedGems then
-                    for _, item in pairs(spawnedGems:GetChildren()) do
+                if hrp then
+                    for _, item in pairs(Workspace:GetDescendants()) do
                         if not _G.AutoPickMobile then break end
                         
-                        local targetPart = item:IsA("BasePart") and item or item:FindFirstChildWhichIsA("BasePart")
-                        if targetPart then
-                            local dist = (hrp.Position - targetPart.Position).Magnitude
-                            if dist <= 20 then
-                                local rarity = getItemRarity(item)
-                                
-                                if _G.SelectedRarities[rarity] then
-                                    local prompt = item:FindFirstChildWhichIsA("ProximityPrompt", true)
-                                    if prompt then
-                                        prompt.HoldDuration = 0
-                                        fireproximityprompt(prompt)
-                                    end
-                                    
-                                    local pGui = LocalPlayer:FindFirstChild("PlayerGui")
-                                    if pGui then
-                                        for _, btn in pairs(pGui:GetDescendants()) do
-                                            if (btn:IsA("TextButton") or btn:IsA("ImageButton")) and btn.Visible then
-                                                if btn.Name:upper():find("PICK") or btn.Name:upper():find("CLAIM") then
-                                                    for _, conn in pairs(getconnections(btn.Activated)) do conn:Fire() end
-                                                end
-                                            end
-                                        end
+                        if item:IsA("ProximityPrompt") then
+                            local parentModel = item.Parent
+                            local targetPart = parentModel:IsA("BasePart") and parentModel or parentModel:FindFirstChildWhichIsA("BasePart")
+                            
+                            if targetPart then
+                                local dist = (hrp.Position - targetPart.Position).Magnitude
+                                if dist <= 30 then
+                                    local rarity = getItemRarity(parentModel)
+                                    local gemValue = getGemValue(parentModel)
+
+                                    local rarityMatched = _G.SelectedRarities[rarity] or false
+                                    local valueMatched = gemValue >= _G.MinGemValue
+
+                                    if rarityMatched and valueMatched then
+                                        item.HoldDuration = 0
+                                        fireproximityprompt(item)
                                     end
                                 end
                             end
@@ -585,7 +591,7 @@ task.spawn(function()
                 end
             end)
         end
-        task.wait(0.15)
+        task.wait(0.1)
     end
 end)
 
@@ -652,7 +658,7 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- Swim & Movement
+-- Swim & Network
 RunService.Stepped:Connect(function()
     local char = LocalPlayer.Character
     if not char then return end
@@ -724,16 +730,55 @@ createFeatureToggleOnly(playerContainer, "Noclip", false, function(state)
     _G.Noclip = state
 end)
 
--- 2. DROPDOWN GROUP: AUTO FARM GEMS
+-- 2. DROPDOWN GROUP: AUTO FARM
 local farmContainer = createDropdownGroup(MainContent, "Auto Farm Gems")
 
 createFeatureToggleOnly(farmContainer, "Auto Dig (Smooth Mobile)", false, function(state)
     _G.AutoDigMobile = state
 end)
 
--- 3. DROPDOWN GROUP: AUTO PICK UP & SELECT RARITY
-createRarityDropdownGroup(MainContent, "Auto Pick Items (Select Rarity)", false, function(state)
+-- 3. DROPDOWN GROUP: AUTO PICK & RARITY
+createRarityDropdownGroup(MainContent, "Auto Pick Items (Rarity)", false, function(state)
     _G.AutoPickMobile = state
+end)
+
+-- INPUT BOX: MINIMUM PRICE FILTER ($)
+local priceContainer = Instance.new("Frame")
+priceContainer.Size = UDim2.new(1, 0, 0, 34)
+priceContainer.BackgroundColor3 = Color3.fromRGB(30, 12, 12)
+priceContainer.BackgroundTransparency = 0.4
+priceContainer.Parent = MainContent
+Instance.new("UICorner", priceContainer).CornerRadius = UDim.new(0, 5)
+
+local priceLabel = Instance.new("TextLabel")
+priceLabel.Size = UDim2.new(0.6, 0, 1, 0)
+priceLabel.Position = UDim2.new(0, 10, 0, 0)
+priceLabel.Text = "Min Gem Value / Price ($):"
+priceLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
+priceLabel.Font = Enum.Font.Gotham
+priceLabel.TextSize = 11
+priceLabel.TextXAlignment = Enum.TextXAlignment.Left
+priceLabel.BackgroundTransparency = 1
+priceLabel.Parent = priceContainer
+
+local priceBox = Instance.new("TextBox")
+priceBox.Size = UDim2.new(0.3, 0, 0, 22)
+priceBox.Position = UDim2.new(1, -110, 0.5, -11)
+priceBox.BackgroundColor3 = Color3.fromRGB(40, 15, 15)
+priceBox.Text = tostring(_G.MinGemValue)
+priceBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+priceBox.Font = Enum.Font.Gotham
+priceBox.TextSize = 11
+priceBox.Parent = priceContainer
+Instance.new("UICorner", priceBox).CornerRadius = UDim.new(0, 4)
+
+priceBox.FocusLost:Connect(function()
+    local num = tonumber(priceBox.Text)
+    if num then
+        _G.MinGemValue = num
+    else
+        priceBox.Text = tostring(_G.MinGemValue)
+    end
 end)
 
 -- 4. KATEGORI: TELEPORT
@@ -804,7 +849,7 @@ local InfoText = Instance.new("TextLabel")
 InfoText.Size = UDim2.new(1, 0, 0, 0)
 InfoText.AutomaticSize = Enum.AutomaticSize.Y
 InfoText.BackgroundTransparency = 1
-InfoText.Text = "<b>EXZET HUB - BETA VERSION</b>\n\n<b>Version:</b> 2.6 Beta Release\n<b>Status:</b> Undetected\n<b>Owner:</b> Exzet Community\n\nIni masih beta ya gw masih belajar ini pun cuma vibe coding mwhehehe, enjoy aja ya dengan fitur kek gini😘"
+InfoText.Text = "<b>EXZET HUB - BETA VERSION</b>\n\n<b>Version:</b> 2.7 RNG Release\n<b>Status:</b> Undetected\n<b>Owner:</b> Exzet Community\n\nEnjoy script-nya!"
 InfoText.TextColor3 = Color3.fromRGB(220, 220, 220)
 InfoText.Font = Enum.Font.Gotham
 InfoText.TextSize = 11
