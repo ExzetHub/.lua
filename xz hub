@@ -7,7 +7,8 @@ local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
-local VirtualInputManager = game:GetService("VirtualInputManager")
+local CoreGui = game:GetService("CoreGui")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -30,11 +31,10 @@ _G.InfJump = false
 _G.Noclip = false
 _G.SavedCFrame = nil
 
--- States Auto Farm
+-- States Auto Farm & ESP
 _G.AutoDigMobile = false
-_G.AutoPickMobile = false
-_G.AutoEquipBestToggle = false
-_G.MinGemValue = 200000 -- Default minimum harga item ($)
+_G.ESPValueToggle = false
+_G.MinGemValue = 200000
 
 _G.SelectedRarities = {
     ["Common"] = false,
@@ -49,14 +49,29 @@ _G.SelectedRarities = {
 
 local RarityList = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Exotic", "Zenith"}
 
--- LIST ALL PICKAXES FROM IMAGE
-local PickaxeList = {
-    "aurora alloy", "celestite crusher", "chipped flint", "diamond fang",
-    "frostbite alloy", "genesis core", "hardened iron", "meteorite edge",
-    "obsidian carver", "primordial breaker", "reinforced tungsten", "rusted scrapper",
-    "shadowed talon", "singularity edge", "splintered timber", "stormcore splitter",
-    "sunforged maul", "tempered steel", "titanium breaker", "twilight cleaver",
-    "voidsteel reaver", "pickaxe", "pick", "dig"
+-- DAFTAR PICKAXE VALID
+local ValidPickaxes = {
+    ["aurora alloy"] = true,
+    ["celestite crusher"] = true,
+    ["chipped flint"] = true,
+    ["diamond fang"] = true,
+    ["frostbite alloy"] = true,
+    ["genesis core"] = true,
+    ["hardened iron"] = true,
+    ["meteorite edge"] = true,
+    ["obsidian carver"] = true,
+    ["primordial breaker"] = true,
+    ["reinforced tungsten"] = true,
+    ["rusted scrapper"] = true,
+    ["shadowed talon"] = true,
+    ["singularity edge"] = true,
+    ["splintered timber"] = true,
+    ["stormcore splitter"] = true,
+    ["sunforged maul"] = true,
+    ["tempered steel"] = true,
+    ["titanium breaker"] = true,
+    ["twilight cleaver"] = true,
+    ["voidsteel reaver"] = true
 }
 
 -- Clean Old UI
@@ -65,8 +80,13 @@ if ParentGui:FindFirstChild("ExzetFinalHub") then
     ParentGui.ExzetFinalHub:Destroy()
 end
 
+-- Folder Holder untuk ESP
+local espFolder = CoreGui:FindFirstChild("EXZET_ESP_HOLDER") or Instance.new("Folder")
+espFolder.Name = "EXZET_ESP_HOLDER"
+espFolder.Parent = CoreGui
+
 -- ============================================
--- HELPER: PARSER ANGKA PINTAR
+-- HELPER: PARSER ANGKA & DETEKSI PLOT
 -- ============================================
 local function parseFormattedNumber(str)
     if not str then return 0 end
@@ -99,26 +119,63 @@ local function formatNumber(num)
     end
 end
 
+-- Validasi apakah tool yang dipegang adalah pickaxe
 local function isPickaxe(tool)
     if not tool or not tool:IsA("Tool") then return false end
     local toolName = tool.Name:lower()
-    for _, name in ipairs(PickaxeList) do
-        if toolName:find(name) then
-            return true
-        end
+    
+    if ValidPickaxes[toolName] then return true end
+    
+    if toolName:find("pickaxe") or toolName:find("pick") or toolName:find("dig") then
+        return true
     end
     return false
 end
 
+-- Deteksi Plot Sendiri di Workspace
+local function getMyPlot()
+    local plotContainer = Workspace:FindFirstChild("PlotCrystals") or Workspace:FindFirstChild("Plots") or Workspace:FindFirstChild("Gardens")
+    if not plotContainer then return nil end
+
+    for _, plot in pairs(plotContainer:GetChildren()) do
+        local ownerObj = plot:FindFirstChild("Owner") or plot:FindFirstChild("Player")
+        if ownerObj and (ownerObj.Value == LocalPlayer or ownerObj.Value == LocalPlayer.Name) then
+            return plot
+        end
+        local ownerAttr = plot:GetAttribute("Owner") or plot:GetAttribute("Player")
+        if ownerAttr and tostring(ownerAttr) == LocalPlayer.Name then
+            return plot
+        end
+    end
+
+    local char = LocalPlayer.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        local myPos = char.HumanoidRootPart.Position
+        local closestPlot, shortestDist = nil, math.huge
+        for _, plot in pairs(plotContainer:GetChildren()) do
+            local primary = plot.PrimaryPart or plot:FindFirstChildOfClass("BasePart") or plot:FindFirstChild("Spawn")
+            if primary then
+                local dist = (primary.Position - myPos).Magnitude
+                if dist < shortestDist and dist < 150 then
+                    shortestDist = dist
+                    closestPlot = plot
+                end
+            end
+        end
+        return closestPlot
+    end
+    return nil
+end
+
 -- ============================================
--- SECTION 2: UI BASE CREATION & HELPERS
+-- SECTION 2: UI BASE CREATION
 -- ============================================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "ExzetFinalHub"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = ParentGui
 
--- OVERLAY VALUE DISPLAY (DI ATAS HOTBAR)
+-- OVERLAY VALUE DISPLAY
 local ValueDisplayFrame = Instance.new("Frame")
 ValueDisplayFrame.Size = UDim2.new(0, 260, 0, 48)
 ValueDisplayFrame.Position = UDim2.new(0.5, -130, 0.82, -50)
@@ -157,8 +214,8 @@ BackpackValLabel.Parent = ValueDisplayFrame
 
 -- MAIN HUB FRAME
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 480, 0, 320)
-MainFrame.Position = UDim2.new(0.5, -240, 0.35, -160)
+MainFrame.Size = UDim2.new(0, 480, 0, 340)
+MainFrame.Position = UDim2.new(0.5, -240, 0.35, -170)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 5, 5)
 MainFrame.BackgroundTransparency = 0.15
 MainFrame.Active = true
@@ -166,9 +223,7 @@ MainFrame.Draggable = true
 MainFrame.ClipsDescendants = true
 MainFrame.Parent = ScreenGui
 
-local FrameCorner = Instance.new("UICorner", MainFrame)
-FrameCorner.CornerRadius = UDim.new(0, 10)
-
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Color = Color3.fromRGB(220, 30, 30)
 MainStroke.Thickness = 1.5
@@ -190,16 +245,6 @@ Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.BackgroundTransparency = 1
 Title.Parent = Header
 
-local MinBtn = Instance.new("TextButton")
-MinBtn.Size = UDim2.new(0, 22, 0, 22)
-MinBtn.Position = UDim2.new(1, -54, 0, 6.5)
-MinBtn.Text = "-"
-MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
-MinBtn.Font = Enum.Font.GothamBold
-MinBtn.Parent = Header
-Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 5)
-
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 22, 0, 22)
 CloseBtn.Position = UDim2.new(1, -27, 0, 6.5)
@@ -209,6 +254,10 @@ CloseBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
 CloseBtn.Font = Enum.Font.GothamBold
 CloseBtn.Parent = Header
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 5)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
 
 -- Tab Bar
 local TabBar = Instance.new("Frame")
@@ -264,7 +313,6 @@ InfoContent.Parent = MainFrame
 local UIList = Instance.new("UIListLayout", MainContent)
 UIList.Padding = UDim.new(0, 6)
 
--- Tab Switch Events
 TabMainBtn.MouseButton1Click:Connect(function()
     MainContent.Visible = true
     InfoContent.Visible = false
@@ -283,7 +331,7 @@ TabInfoBtn.MouseButton1Click:Connect(function()
     TabMainBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
 end)
 
--- Helper: Create Switch
+-- Helper: Create Switch Toggle
 local function createSwitch(parent, defaultState, onToggle)
     local switchBg = Instance.new("Frame")
     switchBg.Size = UDim2.new(0, 38, 0, 20)
@@ -323,45 +371,6 @@ local function createSwitch(parent, defaultState, onToggle)
     end)
 end
 
--- Helper: Input Feature
-local function createFeatureWithInput(parentTarget, titleText, defaultVal, onInputChanged, onToggleChanged)
-    local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, 0, 0, 34)
-    container.BackgroundColor3 = Color3.fromRGB(30, 12, 12)
-    container.BackgroundTransparency = 0.4
-    container.Parent = parentTarget
-    Instance.new("UICorner", container).CornerRadius = UDim.new(0, 5)
-
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0.4, 0, 1, 0)
-    label.Position = UDim2.new(0, 10, 0, 0)
-    label.Text = titleText
-    label.TextColor3 = Color3.fromRGB(230, 230, 230)
-    label.Font = Enum.Font.Gotham
-    label.TextSize = 11
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.BackgroundTransparency = 1
-    label.Parent = container
-
-    local box = Instance.new("TextBox")
-    box.Size = UDim2.new(0.2, 0, 0, 22)
-    box.Position = UDim2.new(0.65, -50, 0.5, -11)
-    box.BackgroundColor3 = Color3.fromRGB(40, 15, 15)
-    box.Text = tostring(defaultVal)
-    box.TextColor3 = Color3.fromRGB(255, 255, 255)
-    box.Font = Enum.Font.Gotham
-    box.TextSize = 11
-    box.Parent = container
-    Instance.new("UICorner", box).CornerRadius = UDim.new(0, 4)
-
-    box.FocusLost:Connect(function()
-        onInputChanged(box.Text)
-    end)
-
-    createSwitch(container, false, onToggleChanged)
-end
-
--- Helper: Toggle Only Feature
 local function createFeatureToggleOnly(parentTarget, titleText, defaultState, onToggleChanged)
     local container = Instance.new("Frame")
     container.Size = UDim2.new(1, 0, 0, 34)
@@ -382,250 +391,46 @@ local function createFeatureToggleOnly(parentTarget, titleText, defaultState, on
     label.Parent = container
 
     createSwitch(container, defaultState, onToggleChanged)
+    return label
 end
 
--- Helper: Dropdown Group Base
-local function createDropdownGroup(parentTarget, groupTitle)
-    local group = Instance.new("Frame")
-    group.Size = UDim2.new(1, 0, 0, 36)
-    group.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
-    group.ClipsDescendants = true
-    group.Parent = parentTarget
-    Instance.new("UICorner", group).CornerRadius = UDim.new(0, 6)
+-- STATUS PICKAXE LABEL (Indikator Tool Yang Dipegang)
+local StatusContainer = Instance.new("Frame")
+StatusContainer.Size = UDim2.new(1, 0, 0, 26)
+StatusContainer.BackgroundColor3 = Color3.fromRGB(20, 8, 8)
+StatusContainer.BackgroundTransparency = 0.3
+StatusContainer.Parent = MainContent
+Instance.new("UICorner", StatusContainer).CornerRadius = UDim.new(0, 5)
 
-    local header = Instance.new("TextButton")
-    header.Size = UDim2.new(1, 0, 0, 36)
-    header.BackgroundTransparency = 1
-    header.Text = "  " .. groupTitle .. "  ▼"
-    header.TextColor3 = Color3.fromRGB(255, 255, 255)
-    header.Font = Enum.Font.GothamBold
-    header.TextSize = 12
-    header.TextXAlignment = Enum.TextXAlignment.Left
-    header.Parent = group
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Size = UDim2.new(1, -20, 1, 0)
+StatusLabel.Position = UDim2.new(0, 10, 0, 0)
+StatusLabel.Text = "⛏️ Holding Pickaxe: None"
+StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+StatusLabel.Font = Enum.Font.GothamBold
+StatusLabel.TextSize = 10
+StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Parent = StatusContainer
 
-    local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, -16, 0, 0)
-    container.Position = UDim2.new(0, 8, 0, 38)
-    container.BackgroundTransparency = 1
-    container.Parent = group
-
-    local listLayout = Instance.new("UIListLayout", container)
-    listLayout.Padding = UDim.new(0, 4)
-
-    local isOpen = false
-    header.MouseButton1Click:Connect(function()
-        isOpen = not isOpen
-        header.Text = isOpen and ("  " .. groupTitle .. "  ▲") or ("  " .. groupTitle .. "  ▼")
-        local targetHeight = isOpen and (38 + listLayout.AbsoluteContentSize.Y + 8) or 36
-        TweenService:Create(group, TweenInfo.new(0.25), {Size = UDim2.new(1, 0, 0, targetHeight)}):Play()
-    end)
-
-    return container
-end
-
--- AUTO COLLECT DROPDOWN
-local function createAutoCollectDropdown(parentTarget, groupTitle, defaultToggleState, onToggleChanged)
-    local group = Instance.new("Frame")
-    group.Size = UDim2.new(1, 0, 0, 36)
-    group.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
-    group.ClipsDescendants = true
-    group.Parent = parentTarget
-    Instance.new("UICorner", group).CornerRadius = UDim.new(0, 6)
-
-    local headerFrame = Instance.new("Frame")
-    headerFrame.Size = UDim2.new(1, 0, 0, 36)
-    headerFrame.BackgroundTransparency = 1
-    headerFrame.Parent = group
-
-    local headerBtn = Instance.new("TextButton")
-    headerBtn.Size = UDim2.new(1, -55, 1, 0)
-    headerBtn.BackgroundTransparency = 1
-    headerBtn.Text = "  " .. groupTitle .. "  ▼"
-    headerBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    headerBtn.Font = Enum.Font.GothamBold
-    headerBtn.TextSize = 12
-    headerBtn.TextXAlignment = Enum.TextXAlignment.Left
-    headerBtn.Parent = headerFrame
-
-    createSwitch(headerFrame, defaultToggleState, onToggleChanged)
-
-    local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, -16, 0, 170)
-    container.Position = UDim2.new(0, 8, 0, 38)
-    container.BackgroundTransparency = 1
-    container.Parent = group
-
-    local containerList = Instance.new("UIListLayout", container)
-    containerList.Padding = UDim.new(0, 6)
-
-    local rLabel = Instance.new("TextLabel")
-    rLabel.Size = UDim2.new(1, 0, 0, 18)
-    rLabel.Text = "Filter Rarity:"
-    rLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    rLabel.Font = Enum.Font.GothamBold
-    rLabel.TextSize = 11
-    rLabel.TextXAlignment = Enum.TextXAlignment.Left
-    rLabel.BackgroundTransparency = 1
-    rLabel.Parent = container
-
-    local rarityScroll = Instance.new("ScrollingFrame")
-    rarityScroll.Size = UDim2.new(1, 0, 0, 95)
-    rarityScroll.BackgroundTransparency = 0.5
-    rarityScroll.BackgroundColor3 = Color3.fromRGB(15, 5, 5)
-    rarityScroll.ScrollBarThickness = 3
-    rarityScroll.ScrollBarImageColor3 = Color3.fromRGB(220, 30, 30)
-    rarityScroll.Parent = container
-    Instance.new("UICorner", rarityScroll).CornerRadius = UDim.new(0, 4)
-
-    local gridLayout = Instance.new("UIGridLayout", rarityScroll)
-    gridLayout.CellSize = UDim2.new(0.48, -4, 0, 26)
-    gridLayout.CellPadding = UDim2.new(0.04, 0, 0, 4)
-
-    for _, rName in ipairs(RarityList) do
-        local rBtn = Instance.new("TextButton")
-        rBtn.Text = rName
-        rBtn.Font = Enum.Font.GothamBold
-        rBtn.TextSize = 10
-        rBtn.Parent = rarityScroll
-        Instance.new("UICorner", rBtn).CornerRadius = UDim.new(0, 4)
-
-        local isSelected = _G.SelectedRarities[rName] or false
-
-        local function updateVisual()
-            if isSelected then
-                rBtn.BackgroundColor3 = Color3.fromRGB(220, 30, 30)
-                rBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            else
-                rBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-                rBtn.TextColor3 = Color3.fromRGB(120, 120, 125)
-            end
-        end
-
-        updateVisual()
-
-        rBtn.MouseButton1Click:Connect(function()
-            isSelected = not isSelected
-            _G.SelectedRarities[rName] = isSelected
-            updateVisual()
-        end)
-    end
-
-    local priceContainer = Instance.new("Frame")
-    priceContainer.Size = UDim2.new(1, 0, 0, 32)
-    priceContainer.BackgroundColor3 = Color3.fromRGB(30, 12, 12)
-    priceContainer.BackgroundTransparency = 0.4
-    priceContainer.Parent = container
-    Instance.new("UICorner", priceContainer).CornerRadius = UDim.new(0, 5)
-
-    local priceLabel = Instance.new("TextLabel")
-    priceLabel.Size = UDim2.new(0.6, 0, 1, 0)
-    priceLabel.Position = UDim2.new(0, 8, 0, 0)
-    priceLabel.Text = "Min Gem Value / Price ($):"
-    priceLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
-    priceLabel.Font = Enum.Font.Gotham
-    priceLabel.TextSize = 10
-    priceLabel.TextXAlignment = Enum.TextXAlignment.Left
-    priceLabel.BackgroundTransparency = 1
-    priceLabel.Parent = priceContainer
-
-    local priceBox = Instance.new("TextBox")
-    priceBox.Size = UDim2.new(0.35, -10, 0, 20)
-    priceBox.Position = UDim2.new(1, -105, 0.5, -10)
-    priceBox.BackgroundColor3 = Color3.fromRGB(40, 15, 15)
-    priceBox.Text = tostring(_G.MinGemValue)
-    priceBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-    priceBox.Font = Enum.Font.Gotham
-    priceBox.TextSize = 10
-    priceBox.Parent = priceContainer
-    Instance.new("UICorner", priceBox).CornerRadius = UDim.new(0, 4)
-
-    priceBox.FocusLost:Connect(function()
-        local parsedValue = parseFormattedNumber(priceBox.Text)
-        if parsedValue > 0 then
-            _G.MinGemValue = parsedValue
-        else
-            priceBox.Text = tostring(_G.MinGemValue)
-        end
-    end)
-
-    local isOpen = false
-    headerBtn.MouseButton1Click:Connect(function()
-        isOpen = not isOpen
-        headerBtn.Text = isOpen and ("  " .. groupTitle .. "  ▲") or ("  " .. groupTitle .. "  ▼")
-        local targetHeight = isOpen and 215 or 36
-        TweenService:Create(group, TweenInfo.new(0.25), {Size = UDim2.new(1, 0, 0, targetHeight)}):Play()
-    end)
-end
-
--- ============================================
--- SECTION 3: RESIZER FEATURE
--- ============================================
-local ResizeGrip = Instance.new("TextButton")
-ResizeGrip.Size = UDim2.new(0, 16, 0, 16)
-ResizeGrip.Position = UDim2.new(1, -16, 1, -16)
-ResizeGrip.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
-ResizeGrip.Text = "↘"
-ResizeGrip.TextColor3 = Color3.fromRGB(220, 30, 30)
-ResizeGrip.Font = Enum.Font.GothamBold
-ResizeGrip.TextSize = 12
-ResizeGrip.ZIndex = 8
-ResizeGrip.Parent = MainFrame
-Instance.new("UICorner", ResizeGrip).CornerRadius = UDim.new(0, 4)
-
-local resizing = false
-local resizeStart = Vector2.zero
-local startSize = UDim2.new()
-
-ResizeGrip.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        resizing = true
-        resizeStart = input.Position
-        startSize = MainFrame.Size
-    end
+-- Menu Toggle Auto Dig & ESP
+createFeatureToggleOnly(MainContent, "Auto Dig (Valid Pickaxe Only)", _G.AutoDigMobile, function(state)
+    _G.AutoDigMobile = state
 end)
 
-UserInputService.InputChanged:Connect(function(input)
-    if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local delta = input.Position - resizeStart
-        local newWidth = math.max(startSize.X.Offset + delta.X, 320)
-        local newHeight = math.max(startSize.Y.Offset + delta.Y, 220)
-        MainFrame.Size = UDim2.new(0, newWidth, 0, newHeight)
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        resizing = false
+createFeatureToggleOnly(MainContent, "ESP Value Garden (My Plot 3D)", _G.ESPValueToggle, function(state)
+    _G.ESPValueToggle = state
+    if not state then
+        espFolder:ClearAllChildren()
     end
 end)
 
 -- ============================================
--- SECTION 4: CORE VALUE CALCULATOR & LOGIC
+-- SECTION 3: CORE VALUE & ESP LOGIC
 -- ============================================
-
-local function getItemRarity(item)
-    local rarityVal = item:FindFirstChild("Rarity")
-    if rarityVal and rarityVal:IsA("StringValue") then
-        return rarityVal.Value
-    end
-
-    for _, label in pairs(item:GetDescendants()) do
-        if label:IsA("TextLabel") and label.Text ~= "" then
-            local txt = label.Text:lower()
-            for _, rName in ipairs(RarityList) do
-                if txt == rName:lower() or txt:find(rName:lower()) then
-                    if not txt:find("zone") then
-                        return rName
-                    end
-                end
-            end
-        end
-    end
-
-    return "Unknown"
-end
 
 local function getGemValue(item)
+    if not item then return 0 end
     for _, attrName in ipairs({"Value", "Price", "Amount", "GemValue", "Cost"}) do
         local attr = item:GetAttribute(attrName)
         if attr and tonumber(attr) then
@@ -653,11 +458,32 @@ local function getGemValue(item)
     return 0
 end
 
--- THREAD CALCULATE BACKPACK & GARDEN VALUE
+local function createBillboardESP(targetPart, text)
+    if not targetPart or not targetPart:IsA("BasePart") then return end
+    
+    local bb = Instance.new("BillboardGui")
+    bb.Name = "ESP_Billboard"
+    bb.Adornee = targetPart
+    bb.Size = UDim2.new(0, 120, 0, 30)
+    bb.StudsOffset = Vector3.new(0, 2.5, 0)
+    bb.AlwaysOnTop = true
+    bb.Parent = espFolder
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(85, 255, 127)
+    label.TextStrokeTransparency = 0
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 12
+    label.Parent = bb
+end
+
+-- Thread ESP & Value Calculations
 task.spawn(function()
     while true do
         pcall(function()
-            -- 1. Backpack Value Calculation
             local totalBpVal = 0
             local bp = LocalPlayer:FindFirstChild("Backpack")
             if bp then
@@ -675,14 +501,20 @@ task.spawn(function()
             end
             BackpackValLabel.Text = "🎒 Backpack Value: $" .. formatNumber(totalBpVal)
 
-            -- 2. Garden Placed Gems Value Calculation
             local totalGardenVal = 0
-            local plotsFolder = Workspace:FindFirstChild("Plots") or Workspace:FindFirstChild("Gardens") or Workspace:FindFirstChild("PlotsFolder")
-            if plotsFolder then
-                for _, item in pairs(plotsFolder:GetDescendants()) do
-                    if item:IsA("Model") or item:IsA("BasePart") then
-                        if item.Name:lower():find("gem") or item:FindFirstChild("Value") or item:GetAttribute("Value") then
-                            totalGardenVal = totalGardenVal + getGemValue(item)
+            espFolder:ClearAllChildren()
+
+            local myPlot = getMyPlot()
+            if myPlot then
+                for _, item in pairs(myPlot:GetDescendants()) do
+                    local val = getGemValue(item)
+                    if val > 0 then
+                        totalGardenVal = totalGardenVal + val
+                        if _G.ESPValueToggle then
+                            local target = item:IsA("BasePart") and item or item:FindFirstChildWhichIsA("BasePart")
+                            if target then
+                                createBillboardESP(target, "💎 $" .. formatNumber(val))
+                            end
                         end
                     end
                 end
@@ -693,111 +525,51 @@ task.spawn(function()
     end
 end)
 
--- THREAD AUTO EQUIP BEST PICKAXE (HIGHEST TO LOWEST VALUE)
+-- ============================================
+-- SECTION 4: AUTO DIG LOGIC (PASIF SAMA BUKAN PICKAXE)
+-- ============================================
 task.spawn(function()
     while true do
-        if _G.AutoEquipBestToggle then
-            pcall(function()
-                local bp = LocalPlayer:FindFirstChild("Backpack")
-                local char = LocalPlayer.Character
-                local hum = char and char:FindFirstChildOfClass("Humanoid")
+        pcall(function()
+            local char = LocalPlayer.Character
+            local heldTool = char and char:FindFirstChildOfClass("Tool")
 
-                if bp and hum then
-                    local bestPickaxe = nil
-                    local highestVal = -1
+            if heldTool and isPickaxe(heldTool) then
+                -- Update Status UI saat memegang Pickaxe valid
+                StatusLabel.Text = "⛏️ Holding Pickaxe: " .. heldTool.Name
+                StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
 
-                    -- Check all pickaxes in Backpack & Character
-                    local allItems = {}
-                    for _, item in pairs(bp:GetChildren()) do table.insert(allItems, item) end
-                    for _, item in pairs(char:GetChildren()) do table.insert(allItems, item) end
-
-                    for _, tool in pairs(allItems) do
-                        if isPickaxe(tool) then
-                            local val = getGemValue(tool)
-                            if val > highestVal then
-                                highestVal = val
-                                bestPickaxe = tool
-                            end
-                        end
-                    end
-
-                    -- Equip highest value Pickaxe if not equipped
-                    if bestPickaxe and bestPickaxe.Parent ~= char then
-                        hum:EquipTool(bestPickaxe)
-                    end
-                end
-            end)
-        end
-        task.wait(2)
-    end
-end)
-
--- THREAD AUTO DIG (SWING SPECIFIC TO PICKAXE ONLY)
-task.spawn(function()
-    while true do
-        if _G.AutoDigMobile then
-            pcall(function()
-                local char = LocalPlayer.Character
-                if char then
-                    local heldTool = char:FindFirstChildWhichIsA("Tool")
-
-                    -- Cek apakah sedang memegang Pickaxe
-                    if isPickaxe(heldTool) then
-                        -- Hanya swing jika yang dipegang BENAR-BENAR Pickaxe
+                -- Hanya mengayun jika Auto Dig Aktif
+                if _G.AutoDigMobile then
+                    local digRemote = ReplicatedStorage:FindFirstChild("Dig", true) 
+                        or ReplicatedStorage:FindFirstChild("Swing", true)
+                        or ReplicatedStorage:FindFirstChild("Mine", true)
+                    
+                    if digRemote then
+                        digRemote:FireServer(heldTool.Name)
+                    else
                         heldTool:Activate()
                     end
                 end
-            end)
-        end
+            else
+                -- Jika tidak memegang pickaxe atau unequipped, stop swing & tampilkan status
+                if heldTool then
+                    StatusLabel.Text = "🚫 Holding: " .. heldTool.Name .. " (Not Pickaxe)"
+                    StatusLabel.TextColor3 = Color3.fromRGB(255, 120, 120)
+                else
+                    StatusLabel.Text = "⛏️ Holding Pickaxe: None"
+                    StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+                end
+            end
+        end)
         task.wait(0.12)
     end
 end)
 
--- THREAD AUTO PICK UP (STRICTLY > MIN GEM VALUE)
-task.spawn(function()
-    while true do
-        if _G.AutoPickMobile then
-            pcall(function()
-                local char = LocalPlayer.Character
-                local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                
-                if hrp then
-                    for _, item in pairs(Workspace:GetDescendants()) do
-                        if not _G.AutoPickMobile then break end
-                        
-                        if item:IsA("ProximityPrompt") then
-                            local parentModel = item.Parent
-                            local targetPart = parentModel:IsA("BasePart") and parentModel or parentModel:FindFirstChildWhichIsA("BasePart")
-                            
-                            if targetPart then
-                                local dist = (hrp.Position - targetPart.Position).Magnitude
-                                if dist <= 30 then
-                                    local rarity = getItemRarity(parentModel)
-                                    local gemValue = getGemValue(parentModel)
-
-                                    local rarityMatched = _G.SelectedRarities[rarity] == true
-                                    local valueMatched = (gemValue > _G.MinGemValue)
-
-                                    if rarityMatched and valueMatched then
-                                        item.HoldDuration = 0
-                                        fireproximityprompt(item)
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end)
-        end
-        task.wait(0.1)
-    end
-end)
-
 -- ============================================
--- SECTION 5: CORE LOOPS (MOVEMENT, INF JUMP, FLY)
+-- SECTION 5: MOVEMENT & LOOPS (INF JUMP, FLY, NOCLIP)
 -- ============================================
 
--- Infinite Jump
 UserInputService.JumpRequest:Connect(function()
     if _G.InfJump then
         local char = LocalPlayer.Character
@@ -806,7 +578,6 @@ UserInputService.JumpRequest:Connect(function()
     end
 end)
 
--- Fly Mechanic
 local flyBodyVelocity, flyBodyGyro
 RunService.RenderStepped:Connect(function()
     local char = LocalPlayer.Character
@@ -842,7 +613,6 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Noclip
 RunService.Stepped:Connect(function()
     if _G.Noclip then
         local char = LocalPlayer.Character
@@ -856,7 +626,6 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- Swim & Network
 RunService.Stepped:Connect(function()
     local char = LocalPlayer.Character
     if not char then return end
@@ -876,242 +645,4 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- Movement Loop
-task.spawn(function()
-    while true do
-        pcall(function()
-            local char = LocalPlayer.Character
-            local hum = char and char:FindFirstChildOfClass("Humanoid")
-            if hum then
-                if _G.WalkSpeedToggle and hum:GetState() ~= Enum.HumanoidStateType.Swimming then
-                    hum.WalkSpeed = _G.WalkSpeedVal
-                end
-
-                if _G.JumpPowerToggle then
-                    hum.UseJumpPower = true
-                    hum.JumpPower = _G.JumpPowerVal
-                end
-            end
-        end)
-        task.wait(0.1)
-    end
-end)
-
--- ============================================
--- SECTION 6: UI CATEGORY BUILDER
--- ============================================
-
--- 1. DROPDOWN GROUP: PLAYER
-local playerContainer = createDropdownGroup(MainContent, "Player")
-
-createFeatureWithInput(playerContainer, "WalkSpeed", 50, function(val)
-    local num = tonumber(val) if num then _G.WalkSpeedVal = num end
-end, function(state) _G.WalkSpeedToggle = state end)
-
-createFeatureWithInput(playerContainer, "JumpHeight", 100, function(val)
-    local num = tonumber(val) if num then _G.JumpPowerVal = num end
-end, function(state) _G.JumpPowerToggle = state end)
-
-createFeatureWithInput(playerContainer, "Fly Speed", 50, function(val)
-    local num = tonumber(val) if num then _G.FlySpeed = num end
-end, function(state) _G.FlyToggle = state end)
-
-createFeatureWithInput(playerContainer, "Swim Speed", 60, function(val)
-    local num = tonumber(val) if num then _G.SwimSpeedVal = num end
-end, function(state) _G.SwimSpeedToggle = state end)
-
-createFeatureToggleOnly(playerContainer, "Infinite Jump", false, function(state)
-    _G.InfJump = state
-end)
-
-createFeatureToggleOnly(playerContainer, "Noclip", false, function(state)
-    _G.Noclip = state
-end)
-
--- 2. DROPDOWN GROUP: AUTO FARM
-local farmContainer = createDropdownGroup(MainContent, "Auto Farm Gems")
-
-createFeatureToggleOnly(farmContainer, "Auto Dig (Smooth Mobile)", false, function(state)
-    _G.AutoDigMobile = state
-end)
-
-createFeatureToggleOnly(farmContainer, "Auto Equip Best Pickaxe", false, function(state)
-    _G.AutoEquipBestToggle = state
-end)
-
--- 3. COMBINED DROPDOWN: AUTO COLLECT
-createAutoCollectDropdown(MainContent, "Auto Collect Gems", false, function(state)
-    _G.AutoPickMobile = state
-end)
-
--- 4. KATEGORI: TELEPORT
-local tpGroup = Instance.new("Frame")
-tpGroup.Size = UDim2.new(1, 0, 0, 75)
-tpGroup.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
-tpGroup.Parent = MainContent
-Instance.new("UICorner", tpGroup).CornerRadius = UDim.new(0, 6)
-
-local tpHeader = Instance.new("TextLabel")
-tpHeader.Size = UDim2.new(1, 0, 0, 30)
-tpHeader.Position = UDim2.new(0, 10, 0, 0)
-tpHeader.Text = "Teleport"
-tpHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
-tpHeader.Font = Enum.Font.GothamBold
-tpHeader.TextSize = 12
-tpHeader.TextXAlignment = Enum.TextXAlignment.Left
-tpHeader.BackgroundTransparency = 1
-tpHeader.Parent = tpGroup
-
-local setBtn = Instance.new("TextButton")
-setBtn.Size = UDim2.new(0.48, -4, 0, 28)
-setBtn.Position = UDim2.new(0, 8, 0, 34)
-setBtn.BackgroundColor3 = Color3.fromRGB(40, 15, 15)
-setBtn.Text = "Set Point"
-setBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-setBtn.Font = Enum.Font.GothamBold
-setBtn.TextSize = 11
-setBtn.Parent = tpGroup
-Instance.new("UICorner", setBtn).CornerRadius = UDim.new(0, 4)
-
-local tpBtn = Instance.new("TextButton")
-tpBtn.Size = UDim2.new(0.48, -4, 0, 28)
-tpBtn.Position = UDim2.new(0.5, 2, 0, 34)
-tpBtn.BackgroundColor3 = Color3.fromRGB(60, 20, 20)
-tpBtn.Text = "TP to Point Set"
-tpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-tpBtn.Font = Enum.Font.GothamBold
-tpBtn.TextSize = 11
-tpBtn.Parent = tpGroup
-Instance.new("UICorner", tpBtn).CornerRadius = UDim.new(0, 4)
-
-setBtn.MouseButton1Click:Connect(function()
-    local char = LocalPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if hrp then
-        _G.SavedCFrame = hrp.CFrame
-        setBtn.Text = "Saved!"
-        task.wait(1)
-        setBtn.Text = "Set Point"
-    end
-end)
-
-tpBtn.MouseButton1Click:Connect(function()
-    if _G.SavedCFrame then
-        local char = LocalPlayer.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        if hrp then hrp.CFrame = _G.SavedCFrame end
-    else
-        tpBtn.Text = "No Point!"
-        task.wait(1)
-        tpBtn.Text = "TP to Point Set"
-    end
-end)
-
--- BUILD INFO TAB
-local InfoText = Instance.new("TextLabel")
-InfoText.Size = UDim2.new(1, 0, 0, 0)
-InfoText.AutomaticSize = Enum.AutomaticSize.Y
-InfoText.BackgroundTransparency = 1
-InfoText.Text = "<b>EXZET HUB - BETA VERSION</b>\n\n<b>Version:</b> 2.9 RNG Release\n<b>Status:</b> Undetected\n<b>Owner:</b> Exzet Community\n\nEnjoy script-nya!"
-InfoText.TextColor3 = Color3.fromRGB(220, 220, 220)
-InfoText.Font = Enum.Font.Gotham
-InfoText.TextSize = 11
-InfoText.RichText = true
-InfoText.TextWrapped = true
-InfoText.TextYAlignment = Enum.TextYAlignment.Top
-InfoText.Parent = InfoContent
-
--- CONFIRMATION POPUP
-local ConfirmFrame = Instance.new("Frame")
-ConfirmFrame.Size = UDim2.new(0, 210, 0, 95)
-ConfirmFrame.Position = UDim2.new(0.5, -105, 0.5, -47)
-ConfirmFrame.BackgroundColor3 = Color3.fromRGB(15, 5, 5)
-ConfirmFrame.Visible = false
-ConfirmFrame.ZIndex = 10
-ConfirmFrame.Parent = ScreenGui
-Instance.new("UICorner", ConfirmFrame).CornerRadius = UDim.new(0, 8)
-local ConfirmStroke = Instance.new("UIStroke", ConfirmFrame)
-ConfirmStroke.Color = Color3.fromRGB(220, 30, 30)
-
-local ConfirmText = Instance.new("TextLabel")
-ConfirmText.Size = UDim2.new(1, -20, 0, 30)
-ConfirmText.Position = UDim2.new(0, 10, 0, 12)
-ConfirmText.Text = "Close script execution?"
-ConfirmText.TextColor3 = Color3.fromRGB(255, 255, 255)
-ConfirmText.Font = Enum.Font.Gotham
-ConfirmText.TextSize = 12
-ConfirmText.BackgroundTransparency = 1
-ConfirmText.ZIndex = 11
-ConfirmText.Parent = ConfirmFrame
-
-local YesBtn = Instance.new("TextButton")
-YesBtn.Size = UDim2.new(0, 80, 0, 26)
-YesBtn.Position = UDim2.new(0.1, 0, 0, 52)
-YesBtn.Text = "Yes"
-YesBtn.BackgroundColor3 = Color3.fromRGB(180, 30, 30)
-YesBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-YesBtn.Font = Enum.Font.GothamBold
-YesBtn.ZIndex = 11
-YesBtn.Parent = ConfirmFrame
-Instance.new("UICorner", YesBtn).CornerRadius = UDim.new(0, 5)
-
-local NoBtn = Instance.new("TextButton")
-NoBtn.Size = UDim2.new(0, 80, 0, 26)
-NoBtn.Position = UDim2.new(0.52, 0, 0, 52)
-NoBtn.Text = "No"
-NoBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-NoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-NoBtn.Font = Enum.Font.GothamBold
-NoBtn.ZIndex = 11
-NoBtn.Parent = ConfirmFrame
-Instance.new("UICorner", NoBtn).CornerRadius = UDim.new(0, 5)
-
--- MINIMIZE & CLOSE LOGIC
-local isMinimized = false
-local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-
-MinBtn.MouseButton1Click:Connect(function()
-    isMinimized = not isMinimized
-    if isMinimized then
-        MinBtn.Text = "+"
-        MainContent.Visible = false
-        InfoContent.Visible = false
-        TabBar.Visible = false
-        ResizeGrip.Visible = false
-        TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 250, 0, 35)}):Play()
-        TweenService:Create(FrameCorner, tweenInfo, {CornerRadius = UDim.new(0, 8)}):Play()
-    else
-        MinBtn.Text = "-"
-        local tween = TweenService:Create(MainFrame, tweenInfo, {Size = UDim2.new(0, 480, 0, 320)})
-        TweenService:Create(FrameCorner, tweenInfo, {CornerRadius = UDim.new(0, 10)}):Play()
-        tween:Play()
-        tween.Completed:Connect(function()
-            if not isMinimized then
-                MainContent.Visible = not InfoContent.Visible
-                TabBar.Visible = true
-                ResizeGrip.Visible = true
-            end
-        end)
-    end
-end)
-
-CloseBtn.MouseButton1Click:Connect(function()
-    ConfirmFrame.Visible = true
-end)
-
-YesBtn.MouseButton1Click:Connect(function()
-    _G.AutoDigMobile = false
-    _G.AutoPickMobile = false
-    _G.AutoEquipBestToggle = false
-    _G.WalkSpeedToggle = false
-    _G.JumpPowerToggle = false
-    _G.FlyToggle = false
-    _G.SwimSpeedToggle = false
-    _G.InfJump = false
-    _G.Noclip = false
-    ScreenGui:Destroy()
-end)
-
-NoBtn.MouseButton1Click:Connect(function()
-    ConfirmFrame.Visible = false
-end)
+print("✅ EXZET HUB UPDATED & LOADED!")
