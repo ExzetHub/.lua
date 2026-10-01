@@ -7,6 +7,7 @@ local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -560,7 +561,6 @@ local function getItemRarity(item)
 end
 
 local function getGemValue(item)
-    -- 1. Cek dari Attribute/Value bawaan objek
     for _, attrName in ipairs({"Value", "Price", "Amount", "GemValue", "Cost"}) do
         local attr = item:GetAttribute(attrName)
         if attr and tonumber(attr) then
@@ -575,12 +575,9 @@ local function getGemValue(item)
         end
     end
 
-    -- 2. Cek teks UI / BillboardGui di atas Item ($113,600)
     for _, label in pairs(item:GetDescendants()) do
         if label:IsA("TextLabel") and label.Text ~= "" then
             local text = label.Text
-            
-            -- Cari teks yang diawali tanda '$'
             local priceMatch = text:match("%$([%d%.,%a]+)")
             if priceMatch then
                 return parseFormattedNumber(priceMatch)
@@ -591,30 +588,41 @@ local function getGemValue(item)
     return 0
 end
 
--- Thread Auto Dig (Safe Tool Equip Tanpa Buang Item Hotbar)
+-- THREAD AUTO DIG (FIXED ANTI-SPAM SLOT 1 & SMOOTH AUTO SWING)
 task.spawn(function()
+    local isEquipping = false
+
     while true do
         if _G.AutoDigMobile then
             pcall(function()
                 local char = LocalPlayer.Character
                 if char then
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    local backpack = LocalPlayer:FindFirstChild("Backpack")
                     local heldTool = char:FindFirstChildWhichIsA("Tool")
 
-                    -- Otomatis Equip Pickaxe/Tool jika belum dipegang
-                    if not heldTool and backpack then
-                        local toolInBackpack = backpack:FindFirstChildWhichIsA("Tool")
-                        if toolInBackpack and hum then
-                            hum:EquipTool(toolInBackpack)
-                            heldTool = toolInBackpack
-                            task.wait(0.1)
-                        end
+                    -- 1. Jika tangan KOSONG dan tidak sedang proses equip, tekan tombol '1' SEKALI saja
+                    if not heldTool and not isEquipping then
+                        isEquipping = true
+                        
+                        -- Send keycode 1 (Hotbar slot 1)
+                        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.One, false, game)
+                        task.wait(0.05)
+                        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.One, false, game)
+                        
+                        -- Jeda waktu tunggu equip animasi game (Mencegah Spam)
+                        task.wait(0.4)
+                        isEquipping = false
                     end
 
-                    -- Gunakan Activate secara aman
+                    -- 2. Jika Pickaxe SUDAH dipegang, lakukan Auto Swing secara lancar
+                    heldTool = char:FindFirstChildWhichIsA("Tool")
                     if heldTool then
+                        -- Direct tool activate
                         heldTool:Activate()
+
+                        -- Direct click/tap event
+                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+                        task.wait(0.03)
+                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
                     end
                 end
             end)
@@ -623,7 +631,7 @@ task.spawn(function()
     end
 end)
 
--- Thread Auto Pick Up (Strictly > Min Gem Value)
+-- THREAD AUTO PICK UP (STRICTLY > MIN GEM VALUE)
 task.spawn(function()
     while true do
         if _G.AutoPickMobile then
