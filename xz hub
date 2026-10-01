@@ -32,7 +32,7 @@ _G.SavedCFrame = nil
 -- States Auto Farm
 _G.AutoDigMobile = false
 _G.AutoPickMobile = false
-_G.MinGemValue = 10000 -- Default minimum harga item ($)
+_G.MinGemValue = 200000 -- Default minimum harga item ($)
 
 _G.SelectedRarities = {
     ["Common"] = false,
@@ -51,6 +51,32 @@ local RarityList = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic",
 local ParentGui = LocalPlayer:WaitForChild("PlayerGui")
 if ParentGui:FindFirstChild("ExzetFinalHub") then
     ParentGui.ExzetFinalHub:Destroy()
+end
+
+-- ============================================
+-- HELPER: PARSER ANGKA PINTAR ($113,600 / 200k / 200rb)
+-- ============================================
+local function parseFormattedNumber(str)
+    if not str then return 0 end
+    
+    local cleanStr = tostring(str):lower():gsub("%s+", "")
+    cleanStr = cleanStr:gsub("%$", "") -- Hapus simbol $
+
+    -- Cek akhiran Ribuan (k / rb)
+    if cleanStr:find("k$") or cleanStr:find("rb$") then
+        local numStr = cleanStr:gsub("[k|rb]", ""):gsub(",", ".")
+        local num = tonumber(numStr)
+        return num and (num * 1000) or 0
+    -- Cek akhiran Juta (m / jt)
+    elseif cleanStr:find("m$") or cleanStr:find("jt$") then
+        local numStr = cleanStr:gsub("[m|jt]", ""):gsub(",", ".")
+        local num = tonumber(numStr)
+        return num and (num * 1000000) or 0
+    end
+
+    -- Hapus koma pemisah ribuan bawaan game ($113,600 -> 113600)
+    cleanStr = cleanStr:gsub(",", "")
+    return tonumber(cleanStr) or 0
 end
 
 -- ============================================
@@ -87,7 +113,7 @@ Header.Parent = MainFrame
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -70, 1, 0)
 Title.Position = UDim2.new(0, 12, 0, 0)
-Title.Text = "Exzet Hub - Hdeh"
+Title.Text = "Exzet Hub - Beta Version"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 13
@@ -448,9 +474,9 @@ local function createAutoCollectDropdown(parentTarget, groupTitle, defaultToggle
     Instance.new("UICorner", priceBox).CornerRadius = UDim.new(0, 4)
 
     priceBox.FocusLost:Connect(function()
-        local num = tonumber(priceBox.Text)
-        if num then
-            _G.MinGemValue = num
+        local parsedValue = parseFormattedNumber(priceBox.Text)
+        if parsedValue > 0 then
+            _G.MinGemValue = parsedValue
         else
             priceBox.Text = tostring(_G.MinGemValue)
         end
@@ -534,6 +560,7 @@ local function getItemRarity(item)
 end
 
 local function getGemValue(item)
+    -- 1. Cek dari Attribute/Value bawaan objek
     for _, attrName in ipairs({"Value", "Price", "Amount", "GemValue", "Cost"}) do
         local attr = item:GetAttribute(attrName)
         if attr and tonumber(attr) then
@@ -548,17 +575,15 @@ local function getGemValue(item)
         end
     end
 
+    -- 2. Cek teks UI / BillboardGui di atas Item ($113,600)
     for _, label in pairs(item:GetDescendants()) do
         if label:IsA("TextLabel") and label.Text ~= "" then
             local text = label.Text
-            if text:find("%d") then
-                if not text:lower():find("luck") and not text:lower():find("kg") then
-                    local cleanText = text:gsub("[^%d]", "")
-                    local num = tonumber(cleanText)
-                    if num then
-                        return num
-                    end
-                end
+            
+            -- Cari teks yang diawali tanda '$'
+            local priceMatch = text:match("%$([%d%.,%a]+)")
+            if priceMatch then
+                return parseFormattedNumber(priceMatch)
             end
         end
     end
@@ -587,7 +612,7 @@ task.spawn(function()
                         end
                     end
 
-                    -- Gunakan Activate secara aman (tidak memicu pembuangan item)
+                    -- Gunakan Activate secara aman
                     if heldTool then
                         heldTool:Activate()
                     end
@@ -598,7 +623,7 @@ task.spawn(function()
     end
 end)
 
--- Thread Auto Pick Up (Filtered by Price & Rarity)
+-- Thread Auto Pick Up (Strictly > Min Gem Value)
 task.spawn(function()
     while true do
         if _G.AutoPickMobile then
@@ -620,8 +645,9 @@ task.spawn(function()
                                     local rarity = getItemRarity(parentModel)
                                     local gemValue = getGemValue(parentModel)
 
-                                    local rarityMatched = _G.SelectedRarities[rarity] or false
-                                    local valueMatched = gemValue >= _G.MinGemValue
+                                    -- Syarat Rarity & Harga > Min Value
+                                    local rarityMatched = _G.SelectedRarities[rarity] == true
+                                    local valueMatched = (gemValue > _G.MinGemValue)
 
                                     if rarityMatched and valueMatched then
                                         item.HoldDuration = 0
