@@ -7,7 +7,6 @@ local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
-local ContextActionService = game:GetService("ContextActionService")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -33,7 +32,7 @@ _G.SavedCFrame = nil
 -- States Auto Farm
 _G.AutoDigMobile = false
 _G.AutoPickMobile = false
-_G.MinGemValue = 10000 -- Default minimum harga item ($) yang mau di-collect
+_G.MinGemValue = 10000 -- Default minimum harga item ($)
 
 _G.SelectedRarities = {
     ["Common"] = false,
@@ -88,7 +87,7 @@ Header.Parent = MainFrame
 local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -70, 1, 0)
 Title.Position = UDim2.new(0, 12, 0, 0)
-Title.Text = "Exzet Hub - Beta Version"
+Title.Text = "Exzet Hub - Hdeh"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 13
@@ -329,8 +328,8 @@ local function createDropdownGroup(parentTarget, groupTitle)
     return container
 end
 
--- Helper: Rarity Dropdown Group
-local function createRarityDropdownGroup(parentTarget, groupTitle, defaultToggleState, onToggleChanged)
+-- COMBINED AUTO COLLECT DROPDOWN (TOGGLE + RARITY SCROLL + PRICE INPUT)
+local function createAutoCollectDropdown(parentTarget, groupTitle, defaultToggleState, onToggleChanged)
     local group = Instance.new("Frame")
     group.Size = UDim2.new(1, 0, 0, 36)
     group.BackgroundColor3 = Color3.fromRGB(25, 10, 10)
@@ -356,46 +355,53 @@ local function createRarityDropdownGroup(parentTarget, groupTitle, defaultToggle
     createSwitch(headerFrame, defaultToggleState, onToggleChanged)
 
     local container = Instance.new("Frame")
-    container.Size = UDim2.new(1, -16, 0, 0)
+    container.Size = UDim2.new(1, -16, 0, 170)
     container.Position = UDim2.new(0, 8, 0, 38)
     container.BackgroundTransparency = 1
     container.Parent = group
 
-    local gridLayout = Instance.new("UIGridLayout", container)
-    gridLayout.CellSize = UDim2.new(0.48, 0, 0, 28)
+    local containerList = Instance.new("UIListLayout", container)
+    containerList.Padding = UDim.new(0, 6)
+
+    -- Label Rarity
+    local rLabel = Instance.new("TextLabel")
+    rLabel.Size = UDim2.new(1, 0, 0, 18)
+    rLabel.Text = "Filter Rarity:"
+    rLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    rLabel.Font = Enum.Font.GothamBold
+    rLabel.TextSize = 11
+    rLabel.TextXAlignment = Enum.TextXAlignment.Left
+    rLabel.BackgroundTransparency = 1
+    rLabel.Parent = container
+
+    -- Scroll Frame untuk Rarity
+    local rarityScroll = Instance.new("ScrollingFrame")
+    rarityScroll.Size = UDim2.new(1, 0, 0, 95)
+    rarityScroll.BackgroundTransparency = 0.5
+    rarityScroll.BackgroundColor3 = Color3.fromRGB(15, 5, 5)
+    rarityScroll.ScrollBarThickness = 3
+    rarityScroll.ScrollBarImageColor3 = Color3.fromRGB(220, 30, 30)
+    rarityScroll.Parent = container
+    Instance.new("UICorner", rarityScroll).CornerRadius = UDim.new(0, 4)
+
+    local gridLayout = Instance.new("UIGridLayout", rarityScroll)
+    gridLayout.CellSize = UDim2.new(0.48, -4, 0, 26)
     gridLayout.CellPadding = UDim2.new(0.04, 0, 0, 4)
-
-    local isOpen = false
-    local function updateGroupHeight()
-        if isOpen then
-            local rows = math.ceil(#RarityList / 2)
-            local targetHeight = 38 + (rows * 32) + 8
-            TweenService:Create(group, TweenInfo.new(0.25), {Size = UDim2.new(1, 0, 0, targetHeight)}):Play()
-        else
-            TweenService:Create(group, TweenInfo.new(0.25), {Size = UDim2.new(1, 0, 0, 36)}):Play()
-        end
-    end
-
-    headerBtn.MouseButton1Click:Connect(function()
-        isOpen = not isOpen
-        headerBtn.Text = isOpen and ("  " .. groupTitle .. "  ▲") or ("  " .. groupTitle .. "  ▼")
-        updateGroupHeight()
-    end)
 
     for _, rName in ipairs(RarityList) do
         local rBtn = Instance.new("TextButton")
         rBtn.Text = rName
         rBtn.Font = Enum.Font.GothamBold
-        rBtn.TextSize = 11
-        rBtn.Parent = container
+        rBtn.TextSize = 10
+        rBtn.Parent = rarityScroll
         Instance.new("UICorner", rBtn).CornerRadius = UDim.new(0, 4)
 
         local isSelected = _G.SelectedRarities[rName] or false
 
         local function updateVisual()
             if isSelected then
-                rBtn.BackgroundColor3 = Color3.fromRGB(220, 220, 220)
-                rBtn.TextColor3 = Color3.fromRGB(15, 15, 15)
+                rBtn.BackgroundColor3 = Color3.fromRGB(220, 30, 30)
+                rBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
             else
                 rBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
                 rBtn.TextColor3 = Color3.fromRGB(120, 120, 125)
@@ -410,6 +416,53 @@ local function createRarityDropdownGroup(parentTarget, groupTitle, defaultToggle
             updateVisual()
         end)
     end
+
+    -- Input Price Filter ($)
+    local priceContainer = Instance.new("Frame")
+    priceContainer.Size = UDim2.new(1, 0, 0, 32)
+    priceContainer.BackgroundColor3 = Color3.fromRGB(30, 12, 12)
+    priceContainer.BackgroundTransparency = 0.4
+    priceContainer.Parent = container
+    Instance.new("UICorner", priceContainer).CornerRadius = UDim.new(0, 5)
+
+    local priceLabel = Instance.new("TextLabel")
+    priceLabel.Size = UDim2.new(0.6, 0, 1, 0)
+    priceLabel.Position = UDim2.new(0, 8, 0, 0)
+    priceLabel.Text = "Min Gem Value / Price ($):"
+    priceLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
+    priceLabel.Font = Enum.Font.Gotham
+    priceLabel.TextSize = 10
+    priceLabel.TextXAlignment = Enum.TextXAlignment.Left
+    priceLabel.BackgroundTransparency = 1
+    priceLabel.Parent = priceContainer
+
+    local priceBox = Instance.new("TextBox")
+    priceBox.Size = UDim2.new(0.35, -10, 0, 20)
+    priceBox.Position = UDim2.new(1, -105, 0.5, -10)
+    priceBox.BackgroundColor3 = Color3.fromRGB(40, 15, 15)
+    priceBox.Text = tostring(_G.MinGemValue)
+    priceBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    priceBox.Font = Enum.Font.Gotham
+    priceBox.TextSize = 10
+    priceBox.Parent = priceContainer
+    Instance.new("UICorner", priceBox).CornerRadius = UDim.new(0, 4)
+
+    priceBox.FocusLost:Connect(function()
+        local num = tonumber(priceBox.Text)
+        if num then
+            _G.MinGemValue = num
+        else
+            priceBox.Text = tostring(_G.MinGemValue)
+        end
+    end)
+
+    local isOpen = false
+    headerBtn.MouseButton1Click:Connect(function()
+        isOpen = not isOpen
+        headerBtn.Text = isOpen and ("  " .. groupTitle .. "  ▲") or ("  " .. groupTitle .. "  ▼")
+        local targetHeight = isOpen and 215 or 36
+        TweenService:Create(group, TweenInfo.new(0.25), {Size = UDim2.new(1, 0, 0, targetHeight)}):Play()
+    end)
 end
 
 -- ============================================
@@ -455,16 +508,8 @@ UserInputService.InputEnded:Connect(function(input)
 end)
 
 -- ============================================
--- SECTION 4: AUTO FARM LOGIC (DIG, PRICE & RARITY PICK)
+-- SECTION 4: AUTO FARM LOGIC (DIG, PRICE & RARITY)
 -- ============================================
-
-local function getHeldTool()
-    local char = LocalPlayer.Character
-    if char then
-        return char:FindFirstChildWhichIsA("Tool")
-    end
-    return nil
-end
 
 local function getItemRarity(item)
     local rarityVal = item:FindFirstChild("Rarity")
@@ -488,23 +533,32 @@ local function getItemRarity(item)
     return "Unknown"
 end
 
--- Helper Membaca Harga / Value Gems (Termasuk format $24,000)
 local function getGemValue(item)
-    if item:GetAttribute("Value") then return tonumber(item:GetAttribute("Value")) end
-    if item:GetAttribute("Price") then return tonumber(item:GetAttribute("Price")) end
-    
-    local valObj = item:FindFirstChild("Value") or item:FindFirstChild("Price")
-    if valObj and (valObj:IsA("IntValue") or valObj:IsA("NumberValue")) then
-        return valObj.Value
+    for _, attrName in ipairs({"Value", "Price", "Amount", "GemValue", "Cost"}) do
+        local attr = item:GetAttribute(attrName)
+        if attr and tonumber(attr) then
+            return tonumber(attr)
+        end
+    end
+
+    for _, childName in ipairs({"Value", "Price", "Amount", "Cost"}) do
+        local valObj = item:FindFirstChild(childName)
+        if valObj and (valObj:IsA("IntValue") or valObj:IsA("NumberValue")) then
+            return valObj.Value
+        end
     end
 
     for _, label in pairs(item:GetDescendants()) do
         if label:IsA("TextLabel") and label.Text ~= "" then
             local text = label.Text
-            if text:find("%$") or text:find("%d") then
-                local cleanText = text:gsub("[^%d]", "") -- Bersihkan simbol $, koma, dll
-                local num = tonumber(cleanText)
-                if num then return num end
+            if text:find("%d") then
+                if not text:lower():find("luck") and not text:lower():find("kg") then
+                    local cleanText = text:gsub("[^%d]", "")
+                    local num = tonumber(cleanText)
+                    if num then
+                        return num
+                    end
+                end
             end
         end
     end
@@ -512,46 +566,35 @@ local function getGemValue(item)
     return 0
 end
 
--- Thread Auto Dig
+-- Thread Auto Dig (Safe Tool Equip Tanpa Buang Item Hotbar)
 task.spawn(function()
     while true do
         if _G.AutoDigMobile then
             pcall(function()
                 local char = LocalPlayer.Character
-                local backpack = LocalPlayer:FindFirstChild("Backpack")
-                local heldTool = getHeldTool()
+                if char then
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    local backpack = LocalPlayer:FindFirstChild("Backpack")
+                    local heldTool = char:FindFirstChildWhichIsA("Tool")
 
-                if not heldTool and backpack then
-                    local toolInBackpack = backpack:FindFirstChildWhichIsA("Tool")
-                    if toolInBackpack then
-                        toolInBackpack.Parent = char
-                        heldTool = toolInBackpack
-                        task.wait(0.05)
+                    -- Otomatis Equip Pickaxe/Tool jika belum dipegang
+                    if not heldTool and backpack then
+                        local toolInBackpack = backpack:FindFirstChildWhichIsA("Tool")
+                        if toolInBackpack and hum then
+                            hum:EquipTool(toolInBackpack)
+                            heldTool = toolInBackpack
+                            task.wait(0.1)
+                        end
                     end
-                end
 
-                if heldTool then
-                    heldTool:Activate()
-
-                    pcall(function()
-                        ContextActionService:CallFunction("Dig", Enum.UserInputState.Begin, nil)
-                        task.wait(0.01)
-                        ContextActionService:CallFunction("Dig", Enum.UserInputState.End, nil)
-                    end)
-                    pcall(function()
-                        ContextActionService:CallFunction("dig", Enum.UserInputState.Begin, nil)
-                        task.wait(0.01)
-                        ContextActionService:CallFunction("dig", Enum.UserInputState.End, nil)
-                    end)
-                    pcall(function()
-                        ContextActionService:CallFunction("Mine", Enum.UserInputState.Begin, nil)
-                        task.wait(0.01)
-                        ContextActionService:CallFunction("Mine", Enum.UserInputState.End, nil)
-                    end)
+                    -- Gunakan Activate secara aman (tidak memicu pembuangan item)
+                    if heldTool then
+                        heldTool:Activate()
+                    end
                 end
             end)
         end
-        task.wait(0.1)
+        task.wait(0.12)
     end
 end)
 
@@ -737,48 +780,9 @@ createFeatureToggleOnly(farmContainer, "Auto Dig (Smooth Mobile)", false, functi
     _G.AutoDigMobile = state
 end)
 
--- 3. DROPDOWN GROUP: AUTO PICK & RARITY
-createRarityDropdownGroup(MainContent, "Auto Pick Items (Rarity)", false, function(state)
+-- 3. COMBINED DROPDOWN: AUTO COLLECT (TOGGLE + SCROLL RARITY + PRICE)
+createAutoCollectDropdown(MainContent, "Auto Collect Gems", false, function(state)
     _G.AutoPickMobile = state
-end)
-
--- INPUT BOX: MINIMUM PRICE FILTER ($)
-local priceContainer = Instance.new("Frame")
-priceContainer.Size = UDim2.new(1, 0, 0, 34)
-priceContainer.BackgroundColor3 = Color3.fromRGB(30, 12, 12)
-priceContainer.BackgroundTransparency = 0.4
-priceContainer.Parent = MainContent
-Instance.new("UICorner", priceContainer).CornerRadius = UDim.new(0, 5)
-
-local priceLabel = Instance.new("TextLabel")
-priceLabel.Size = UDim2.new(0.6, 0, 1, 0)
-priceLabel.Position = UDim2.new(0, 10, 0, 0)
-priceLabel.Text = "Min Gem Value / Price ($):"
-priceLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
-priceLabel.Font = Enum.Font.Gotham
-priceLabel.TextSize = 11
-priceLabel.TextXAlignment = Enum.TextXAlignment.Left
-priceLabel.BackgroundTransparency = 1
-priceLabel.Parent = priceContainer
-
-local priceBox = Instance.new("TextBox")
-priceBox.Size = UDim2.new(0.3, 0, 0, 22)
-priceBox.Position = UDim2.new(1, -110, 0.5, -11)
-priceBox.BackgroundColor3 = Color3.fromRGB(40, 15, 15)
-priceBox.Text = tostring(_G.MinGemValue)
-priceBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-priceBox.Font = Enum.Font.Gotham
-priceBox.TextSize = 11
-priceBox.Parent = priceContainer
-Instance.new("UICorner", priceBox).CornerRadius = UDim.new(0, 4)
-
-priceBox.FocusLost:Connect(function()
-    local num = tonumber(priceBox.Text)
-    if num then
-        _G.MinGemValue = num
-    else
-        priceBox.Text = tostring(_G.MinGemValue)
-    end
 end)
 
 -- 4. KATEGORI: TELEPORT
@@ -849,7 +853,7 @@ local InfoText = Instance.new("TextLabel")
 InfoText.Size = UDim2.new(1, 0, 0, 0)
 InfoText.AutomaticSize = Enum.AutomaticSize.Y
 InfoText.BackgroundTransparency = 1
-InfoText.Text = "<b>EXZET HUB - BETA VERSION</b>\n\n<b>Version:</b> 2.7 RNG Release\n<b>Status:</b> Undetected\n<b>Owner:</b> Exzet Community\n\nEnjoy script-nya!"
+InfoText.Text = "<b>EXZET HUB - BETA VERSION</b>\n\n<b>Version:</b> 2.8 RNG Release\n<b>Status:</b> Undetected\n<b>Owner:</b> Exzet Community\n\nEnjoy script-nya!"
 InfoText.TextColor3 = Color3.fromRGB(220, 220, 220)
 InfoText.Font = Enum.Font.Gotham
 InfoText.TextSize = 11
